@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class="row">
+	<div class="col-md-5">
+		{% with messages = get_flashed_messages() %}
+		{% if messages %}
+		{% for message in messages %}
+		<div class="alert alert-success alert-dismissible fade show" role="alert">
+			{{ message }}
+			<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				<span aria-hidden="true">&times;</span>
+			</button>
+		</div>
+		{% endfor %}
+		{% endif %}
+		{% endwith %}
+		<div class="card card-body">
+			<form action="{{url_for('products.add_product')}}" method="POST">
+				<div class="form-group">
+					<input type="text" class="form-control" name="name" placeholder="name">
+				</div>
+				<div class="form-group">
+					<input type="text" class="form-control" name="description" placeholder="description">
+				</div>
+				<div class="form-group">
+					<input type="text" class="form-control" name="category" placeholder="category">
+				</div>
+				<div class="form-group">
+					<input type="text" class="form-control" name="unit_price" placeholder="unit_price">
+				</div>
+				<div class="form-group">
+					<input type="text" class="form-control" name="stock" placeholder="stock">
+				</div>
+				<button class="btn btn-primary btn-block">
+					Save
+				</button>
+			</form>
+		</div>
+	</div>
+	<div class="col-md-7">
+		<table class="table table-striped table-hover table-bordered table-sm bg-white">
+			<thead>
+				<tr>
+					<td>ID</td>
+					<td>Name</td>
+					<td>Description</td>
+					<td>Category</td>
+					<td>Unit price</td>
+					<td>Stock</td>
+					<td>Operations</td>
+				</tr>
+			</thead>
+			<tbody>
+				{% for product in products %}
+				<tr>
+					<td>{{product.id_products}}</td>
+					<td>{{product.name}}</td>
+					<td>{{product.description}}</td>
+					<td>{{product.category}}</td>
+					<td>{{product.unit_price}}</td>
+					<td>{{product.stock}}</td>
+					<td>
+						<a href="{{url_for('products.get_product', id = product.id_products)}}"
+							class="btn btn-secondary btn-sm">edit</a>
+						<a href="{{url_for('products.delete_product',id = product.id_products)}}"
+							class="btn btn-danger btn-delete btn-sm">delete</a>
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+</div>
+
+{% endblock %}
