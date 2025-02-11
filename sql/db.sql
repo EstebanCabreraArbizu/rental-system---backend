@@ -102,7 +102,7 @@ CREATE TABLE `Servicio_Vivienda` (
 -- Table: Tipo_usuario
 CREATE TABLE `Tipo_usuario` (
     `id_tipo_u` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
+    `nombre` nvarchar(15)  NOT NULL,
     CONSTRAINT `Tipo_usuario_pk` PRIMARY KEY (`id_tipo_u`)
 );
 
