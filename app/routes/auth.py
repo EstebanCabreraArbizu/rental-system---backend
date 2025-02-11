@@ -18,76 +18,68 @@ def get_db_connection():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('auth.dashboard'))
-        
+    
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # Validación básica
-        if not email or not password:
-            flash('Por favor ingrese correo y contraseña', 'error')
-            return render_template('auth/login.html')
-            
-        conn = None
-        cursor = None
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
+            correo = request.form.get('email')
+            contrasenia = request.form.get('password')
+            remember = True if request.form.get('remember') else False
             
-            # Consulta optimizada usando índices
-            query = """
-                SELECT 
-                    u.id_usuario,
-                    u.nombre,
-                    u.correo,
-                    u.contrasenia,
-                    t.nombre as tipo_usuario
-                FROM Usuario u
-                INNER JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
-                WHERE u.correo = ?
-            """
+            print(f"\n=== INICIO PROCESO DE LOGIN ===")
+            print(f"Email ingresado: {correo}")
             
-            cursor.execute(query, (email,))
-            user_data = cursor.fetchone()
+            # Usar el método del modelo
+            user_data = User.get_by_email(correo)
             
             if user_data:
-                # Verificar contraseña
-                if user_data.contrasenia == password:  # En producción usar hash
-                    user = User(
-                        id_usuario=user_data.id_usuario,
-                        nombre=user_data.nombre,
-                        correo=user_data.correo,
-                        tipo_usuario=user_data.tipo_usuario
+                print("Usuario encontrado:", user_data)
+                print("Contraseña almacenada:", user_data['contrasenia'])
+                print("Contraseña ingresada:", contrasenia)
+                
+                # Verificar si la contraseña está hasheada
+                if user_data['contrasenia'].startswith('pbkdf2:sha256:'):
+                    is_valid = check_password_hash(user_data['contrasenia'], contrasenia)
+                else:
+                    # Si la contraseña no está hasheada, comparar directamente
+                    is_valid = user_data['contrasenia'] == contrasenia
+                
+                print("¿Contraseña válida?:", is_valid)
+                
+                if is_valid:
+                    user_obj = User(
+                        id_usuario=user_data['id'],
+                        nombre=user_data['nombre'],
+                        correo=user_data['correo'],
+                        tipo_usuario=user_data['tipo_usuario']
                     )
                     
-                    # Recordar usuario por 7 días
-                    login_user(user, remember=True, duration=timedelta(days=7))
+                    login_user(user_obj, remember=remember)
+                    print("Login exitoso")
                     
-                    flash(f'¡Bienvenido {user.nombre}!', 'success')
-                    
-                    # Obtener la URL a la que el usuario intentaba acceder
-                    next_page = request.args.get('next')
-                    if not next_page or urlparse(next_page).netloc != '':
-                        next_page = url_for('auth.dashboard')
-                        
-                    return redirect(next_page)
+                    return jsonify({
+                        'success': True,
+                        'message': '¡Inicio de sesión exitoso!',
+                        'redirect': url_for('auth.dashboard')
+                    })
                 else:
-                    # Agregar pequeño delay para prevenir ataques de fuerza bruta
-                    time.sleep(0.5)
-                    flash('Contraseña incorrecta', 'error')
+                    print("Contraseña incorrecta")
+                    return jsonify({
+                        'success': False,
+                        'message': 'Contraseña incorrecta'
+                    }), 401
             else:
-                # Agregar pequeño delay para prevenir enumeración de usuarios
-                time.sleep(0.5)
-                flash('Usuario no encontrado', 'error')
+                print("Usuario no encontrado")
+                return jsonify({
+                    'success': False,
+                    'message': 'Usuario no encontrado'
+                }), 404
                 
         except Exception as e:
-            flash('Error al iniciar sesión. Por favor intente más tarde.', 'error')
-            print(f"Error de login: {str(e)}")  # Log del error
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
+            print(f"Error en login: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }), 500
     
     return render_template('auth/login.html')
 
@@ -152,14 +144,29 @@ def register():
 @auth_bp.route('/dashboard')
 @login_required
 def dashboard():
+    if not current_user.is_authenticated:
+        flash('Por favor inicia sesión para acceder al dashboard.', 'error')
+        return redirect(url_for('auth.login'))
+        
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Obtener estadísticas generales
-        stats = {}
+        # Verificar si el usuario aún existe en la base de datos
+        cursor.execute("""
+            SELECT id_usuario 
+            FROM Usuario 
+            WHERE id_usuario = ? AND correo = ?
+        """, (current_user.id, current_user.correo))
         
-        # Total de usuarios
+        user_exists = cursor.fetchone()
+        
+        if not user_exists:
+            logout_user()
+            flash('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.', 'error')
+            return redirect(url_for('auth.login'))
+        
+        # Obtener estadísticas
         cursor.execute("""
             SELECT 
                 COUNT(*) as total,
@@ -168,56 +175,42 @@ def dashboard():
             FROM Usuario
         """)
         user_stats = cursor.fetchone()
-        stats['total_usuarios'] = user_stats[0]
-        stats['total_clientes'] = user_stats[1]
-        stats['total_propietarios'] = user_stats[2]
+        
+        stats = {
+            'total_usuarios': user_stats[0] if user_stats[0] else 0,
+            'total_clientes': user_stats[1] if user_stats[1] else 0,
+            'total_propietarios': user_stats[2] if user_stats[2] else 0
+        }
 
-        # Obtener lista de clientes
+        # Obtener lista de usuarios
         cursor.execute("""
             SELECT 
                 u.id_usuario,
                 u.nombre,
                 u.correo,
                 u.telefono,
-                u.direccion,
                 u.fecha_ingreso,
                 t.nombre as tipo_usuario
             FROM Usuario u
             JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
-            WHERE t.nombre = 'Cliente'
             ORDER BY u.fecha_ingreso DESC
         """)
-        clientes = cursor.fetchall()
+        usuarios = cursor.fetchall()
 
-        # Obtener lista de propietarios
-        cursor.execute("""
-            SELECT 
-                u.id_usuario,
-                u.nombre,
-                u.correo,
-                u.telefono,
-                u.direccion,
-                u.fecha_ingreso,
-                t.nombre as tipo_usuario
-            FROM Usuario u
-            JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
-            WHERE t.nombre = 'Propietario'
-            ORDER BY u.fecha_ingreso DESC
-        """)
-        propietarios = cursor.fetchall()
-
-        return render_template('auth/Panel admin.html',
+        return render_template('auth/dashboard.html',
                            stats=stats,
-                           clientes=clientes,
-                           propietarios=propietarios,
+                           usuarios=usuarios,
                            current_user=current_user)
 
     except Exception as e:
+        print(f"Error en dashboard: {str(e)}")  # Debug
         flash(f'Error al cargar el dashboard: {str(e)}', 'error')
         return redirect(url_for('auth.login'))
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # Rutas para gestión de usuarios
 @auth_bp.route('/usuario/editar/<int:id>', methods=['POST'])

@@ -32,18 +32,25 @@ class User(UserMixin):
     def get_by_email(email):
         conn = pyodbc.connect(Config.SQLSERVER_CONNECTION)
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT u.id_usuario, u.nombre, u.correo, t.nombre as tipo_usuario 
-            FROM Usuario u 
-            JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u 
-            WHERE u.correo = ?
-        """, email)
-        user = cursor.fetchone()
-        conn.close()
-        
-        if user:
-            return User(user[0], user[1], user[2], user[3])
-        return None
+        try:
+            cursor.execute("""
+                SELECT id_usuario, nombre, correo, contrasenia, Tipo_usuario_id_tipo_u 
+                FROM Usuario 
+                WHERE correo = ?
+            """, (email,))
+            user = cursor.fetchone()
+            if user:
+                return {
+                    'id': user[0],
+                    'nombre': user[1],
+                    'correo': user[2],
+                    'contrasenia': user[3],
+                    'tipo_usuario': user[4]
+                }
+            return None
+        finally:
+            cursor.close()
+            conn.close()
 
 @login_manager.user_loader
 def load_user(user_id):
