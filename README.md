@@ -7,8 +7,8 @@ Este es un proyecto para realizar un sistema de alquiler génerico orientado a s
 ### Installation
 
 ```bash
-git clone https://github.com/EstebanCabreraArbizu/API_products.git
-cd API_products
+git clone https://github.com/EstebanCabreraArbizu/rental-system---backend.git
+cd rental-system---backend
 pip install -r requirements.txt
 python app/main.py
 ```
