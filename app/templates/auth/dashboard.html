@@ -394,53 +394,114 @@
             </div>
         </div>
 
-        <!-- Users Table -->
-        <div class="table-container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Lista de Usuarios</h5>
-                <div class="d-flex gap-2">
-                    <input type="text" class="form-control" placeholder="Buscar usuario...">
-                    <button class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Nuevo Usuario
-                    </button>
+        <!-- Tablas de Usuarios -->
+        <div class="row g-4">
+            <!-- Tabla de Clientes -->
+            <div class="col-12">
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">Lista de Clientes</h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" placeholder="Buscar cliente...">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                {% if usuario.tipo_usuario == 'Cliente' %}
+                                <tr>
+                                    <td>{{ usuario.id_usuario }}</td>
+                                    <td>{{ usuario.nombre }}</td>
+                                    <td>{{ usuario.correo }}</td>
+                                    <td>{{ usuario.fecha_ingreso.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="verDetallesUsuario({{ usuario.id_usuario }})">
+                                            <i class="fas fa-eye"></i> Ver más
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="custom-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Tipo</th>
-                            <th>Fecha Registro</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for usuario in usuarios %}
-                        <tr>
-                            <td>{{ usuario.id_usuario }}</td>
-                            <td>{{ usuario.nombre }}</td>
-                            <td>{{ usuario.correo }}</td>
-                            <td>
-                                <span class="badge bg-{{ 'primary' if usuario.tipo_usuario == 'Cliente' else 'success' }}">
-                                    {{ usuario.tipo_usuario }}
-                                </span>
-                            </td>
-                            <td>{{ usuario.fecha_ingreso.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning" onclick="editarUsuario({{ usuario.id_usuario }})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="eliminarUsuario({{ usuario.id_usuario }})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+            <!-- Tabla de Propietarios -->
+            <div class="col-12 mt-4">
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">Lista de Propietarios</h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" placeholder="Buscar propietario...">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                {% if usuario.tipo_usuario == 'Propietario' %}
+                                <tr>
+                                    <td>{{ usuario.id_usuario }}</td>
+                                    <td>{{ usuario.nombre }}</td>
+                                    <td>{{ usuario.correo }}</td>
+                                    <td>{{ usuario.fecha_ingreso.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="verDetallesUsuario({{ usuario.id_usuario }})">
+                                            <i class="fas fa-eye"></i> Ver más
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Detalles de Usuario -->
+        <div class="modal fade" id="userDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Detalles del Usuario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <img id="userAvatar" src="" alt="Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="user-details">
+                                    <!-- Los detalles se llenarán dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -586,6 +647,52 @@
                     }
                 });
             }
+        }
+
+        function verDetallesUsuario(id) {
+            fetch(`/usuario/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+                    const userDetails = document.querySelector('.user-details');
+                    
+                    // Actualizar avatar
+                    document.getElementById('userAvatar').src = data.avatar || 'https://i.pravatar.cc/150';
+                    
+                    // Construir detalles del usuario
+                    userDetails.innerHTML = `
+                        <h4>${data.nombre}</h4>
+                        <p class="text-muted">${data.tipo_usuario}</p>
+                        <hr>
+                        <div class="mb-3">
+                            <strong>Email:</strong> ${data.correo}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Teléfono:</strong> ${data.telefono || 'No especificado'}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Fecha de registro:</strong> ${new Date(data.fecha_ingreso).toLocaleDateString()}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Documento:</strong> ${data.doc_identidad || 'No especificado'}
+                        </div>
+                        ${data.tipo_usuario === 'Propietario' ? `
+                            <div class="mb-3">
+                                <strong>Propiedades registradas:</strong> ${data.propiedades_count || 0}
+                            </div>
+                        ` : `
+                            <div class="mb-3">
+                                <strong>Reservas realizadas:</strong> ${data.reservas_count || 0}
+                            </div>
+                        `}
+                    `;
+                    
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar los detalles del usuario');
+                });
         }
     </script>
 </body>

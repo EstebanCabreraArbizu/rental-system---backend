@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 import pyodbc
 from ..config import Config
 from ..models.user import User
@@ -88,57 +88,76 @@ def register():
     if request.method == 'POST':
         try:
             # Obtener datos del formulario
-            data = {
-                'nombre': request.form.get('nombre')[:10],  # Limitamos a 10 caracteres según la BD
-                'correo': request.form.get('correo')[:10],
-                'contrasenia': request.form.get('contrasenia')[:15],
-                'doc_identidad': request.form.get('docIdentidad')[:10],
-                'telefono': request.form.get('telefono')[:11],
-                'direccion': request.form.get('direccion')[:30],
-                'tipo_usuario': request.form.get('tipoUsuario'),
-                'imagen_url': request.files.get('imagen').filename[:20] if request.files.get('imagen') else 'default.jpg'
-            }
-            
+            nombre = request.form.get('nombre')
+            correo = request.form.get('correo')
+            contrasenia = request.form.get('contrasenia')
+            doc_identidad = request.form.get('docIdentidad')
+            telefono = request.form.get('telefono')
+            direccion = request.form.get('direccion')
+            tipo_usuario = request.form.get('tipoUsuario')
+            imagen_url = request.form.get('imagen_url', 'https://i.pravatar.cc/150')
+
+            # Validaciones
+            if not all([nombre, correo, contrasenia, doc_identidad, telefono, direccion, tipo_usuario]):
+                return jsonify({
+                    'success': False,
+                    'message': 'Todos los campos son requeridos'
+                }), 400
+
+            # Hash de la contraseña
+            hashed_password = generate_password_hash(contrasenia, method='pbkdf2:sha256')
+
             conn = get_db_connection()
             cursor = conn.cursor()
-            
-            # Obtener el siguiente ID de usuario
-            cursor.execute("SELECT MAX(id_usuario) FROM Usuario")
-            max_id = cursor.fetchone()[0]
-            next_id = 1 if max_id is None else max_id + 1
-            
-            # Insertar nuevo usuario
-            cursor.execute("""
-                INSERT INTO Usuario (
-                    id_usuario, nombre, correo, contrasenia, doc_identidad, 
-                    telefono, direccion, fecha_ingreso, preferencias, 
-                    imagen_url, Tipo_usuario_id_tipo_u
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?)
-            """, (
-                next_id,
-                data['nombre'],
-                data['correo'],
-                data['contrasenia'],
-                data['doc_identidad'],
-                data['telefono'],
-                data['direccion'],
-                'default',  # preferencias por defecto
-                data['imagen_url'],
-                int(data['tipo_usuario'])  # Convertir a entero para el tipo de usuario
-            ))
-            
-            conn.commit()
-            
-            # Crear objeto usuario y hacer login
-            user = User(next_id, data['nombre'], data['correo'], data['tipo_usuario'])
-            login_user(user)
-            
-            flash('¡Cuenta creada exitosamente!', 'success')
-            return redirect(url_for('auth.admin_dashboard'))
-            
+
+            try:
+                # Verificar si el correo ya existe
+                cursor.execute("SELECT id_usuario FROM Usuario WHERE correo = ?", (correo,))
+                if cursor.fetchone():
+                    return jsonify({
+                        'success': False,
+                        'message': 'El correo electrónico ya está registrado'
+                    }), 400
+
+                # Insertar nuevo usuario sin especificar id_usuario
+                cursor.execute("""
+                    INSERT INTO Usuario (
+                        nombre, correo, contrasenia, doc_identidad, 
+                        telefono, direccion, imagen_url, Tipo_usuario_id_tipo_u
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    nombre, correo, hashed_password, doc_identidad, 
+                    telefono, direccion, imagen_url, tipo_usuario
+                ))
+                
+                conn.commit()
+                print("Usuario registrado exitosamente")
+
+                return jsonify({
+                    'success': True,
+                    'message': '¡Registro exitoso!',
+                    'redirect': url_for('auth.login')
+                })
+
+            except Exception as e:
+                conn.rollback()
+                print(f"Error específico en la base de datos: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Error al registrar el usuario: {str(e)}'
+                }), 500
+
+            finally:
+                cursor.close()
+                conn.close()
+
         except Exception as e:
-            return jsonify({'error': str(e)}), 400
-            
+            print(f"Error general: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'Error en el servidor: {str(e)}'
+            }), 500
+
     return render_template('auth/create_account.html')
 
 @auth_bp.route('/dashboard')

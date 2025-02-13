@@ -8,7 +8,7 @@ class Config:
     SQLSERVER_CONNECTION = (
         "DRIVER={SQL Server};"
         "SERVER=LAPTOP-70S6BK7M;"
-        "DATABASE=RENTALLDB;"
+        "DATABASE=RENTALLDB2;"
         "UID=dev_mps;"
         "PWD=polo1266"
     )
