@@ -492,7 +492,8 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-4 text-center">
-                                <img id="userAvatar" src="" alt="Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                                <img id="userAvatar" src="" alt="Avatar" class="rounded-circle mb-3" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
                             </div>
                             <div class="col-md-8">
                                 <div class="user-details">
@@ -657,34 +658,76 @@
                     const userDetails = document.querySelector('.user-details');
                     
                     // Actualizar avatar
-                    document.getElementById('userAvatar').src = data.avatar || 'https://i.pravatar.cc/150';
+                    document.getElementById('userAvatar').src = data.imagen_url || 'https://i.pravatar.cc/150';
                     
                     // Construir detalles del usuario
                     userDetails.innerHTML = `
-                        <h4>${data.nombre}</h4>
-                        <p class="text-muted">${data.tipo_usuario}</p>
-                        <hr>
-                        <div class="mb-3">
-                            <strong>Email:</strong> ${data.correo}
-                        </div>
-                        <div class="mb-3">
-                            <strong>Teléfono:</strong> ${data.telefono || 'No especificado'}
-                        </div>
-                        <div class="mb-3">
-                            <strong>Fecha de registro:</strong> ${new Date(data.fecha_ingreso).toLocaleDateString()}
-                        </div>
-                        <div class="mb-3">
-                            <strong>Documento:</strong> ${data.doc_identidad || 'No especificado'}
-                        </div>
-                        ${data.tipo_usuario === 'Propietario' ? `
-                            <div class="mb-3">
-                                <strong>Propiedades registradas:</strong> ${data.propiedades_count || 0}
+                        <div class="card border-0">
+                            <div class="card-body p-0">
+                                <h4 class="mb-1">${data.nombre}</h4>
+                                <p class="text-muted mb-3">
+                                    <span class="badge bg-${data.tipo_usuario === 'Cliente' ? 'primary' : 'success'}">
+                                        ${data.tipo_usuario}
+                                    </span>
+                                </p>
+                                
+                                <div class="info-group mb-3">
+                                    <h6 class="text-uppercase text-muted mb-2">Información Personal</h6>
+                                    <div class="mb-2">
+                                        <strong><i class="fas fa-envelope me-2"></i>Email:</strong>
+                                        <span class="ms-2">${data.correo}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong><i class="fas fa-phone me-2"></i>Teléfono:</strong>
+                                        <span class="ms-2">${data.telefono || 'No especificado'}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong><i class="fas fa-id-card me-2"></i>Documento:</strong>
+                                        <span class="ms-2">${data.doc_identidad || 'No especificado'}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong><i class="fas fa-map-marker-alt me-2"></i>Dirección:</strong>
+                                        <span class="ms-2">${data.direccion || 'No especificada'}</span>
+                                    </div>
+                                </div>
+
+                                <div class="info-group mb-3">
+                                    <h6 class="text-uppercase text-muted mb-2">Detalles de la Cuenta</h6>
+                                    <div class="mb-2">
+                                        <strong><i class="fas fa-calendar me-2"></i>Fecha de registro:</strong>
+                                        <span class="ms-2">${new Date(data.fecha_ingreso).toLocaleDateString()}</span>
+                                    </div>
+                                    ${data.preferencias ? `
+                                        <div class="mb-2">
+                                            <strong><i class="fas fa-heart me-2"></i>Preferencias:</strong>
+                                            <span class="ms-2">${data.preferencias}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                ${data.tipo_usuario === 'Propietario' ? `
+                                    <div class="info-group">
+                                        <h6 class="text-uppercase text-muted mb-2">Estadísticas</h6>
+                                        <div class="mb-2">
+                                            <strong><i class="fas fa-home me-2"></i>Propiedades registradas:</strong>
+                                            <span class="ms-2">${data.propiedades_count || 0}</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong><i class="fas fa-car me-2"></i>Vehículos registrados:</strong>
+                                            <span class="ms-2">${data.vehiculos_count || 0}</span>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="info-group">
+                                        <h6 class="text-uppercase text-muted mb-2">Actividad</h6>
+                                        <div class="mb-2">
+                                            <strong><i class="fas fa-bookmark me-2"></i>Reservas realizadas:</strong>
+                                            <span class="ms-2">${data.reservas_count || 0}</span>
+                                        </div>
+                                    </div>
+                                `}
                             </div>
-                        ` : `
-                            <div class="mb-3">
-                                <strong>Reservas realizadas:</strong> ${data.reservas_count || 0}
-                            </div>
-                        `}
+                        </div>
                     `;
                     
                     modal.show();

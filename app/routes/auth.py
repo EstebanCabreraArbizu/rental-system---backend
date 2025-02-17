@@ -277,3 +277,74 @@ def logout():
     logout_user()
     flash('Has cerrado sesión exitosamente', 'info')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/usuario/<int:id>')
+def get_usuario(id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Obtener datos básicos del usuario
+        cursor.execute("""
+            SELECT u.*, t.nombre as tipo_usuario 
+            FROM Usuario u 
+            JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u 
+            WHERE u.id_usuario = ?
+        """, (id,))
+        
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+
+        # Convertir a diccionario
+        usuario_dict = {
+            'id_usuario': usuario.id_usuario,
+            'nombre': usuario.nombre,
+            'correo': usuario.correo,
+            'doc_identidad': usuario.doc_identidad,
+            'telefono': usuario.telefono,
+            'direccion': usuario.direccion,
+            'fecha_ingreso': usuario.fecha_ingreso,
+            'preferencias': usuario.preferencias,
+            'imagen_url': usuario.imagen_url,
+            'tipo_usuario': usuario.tipo_usuario
+        }
+
+        # Obtener estadísticas adicionales según el tipo de usuario
+        if usuario.tipo_usuario == 'Propietario':
+            # Contar propiedades y vehículos
+            cursor.execute("""
+                SELECT 
+                    COUNT(DISTINCT v.id_vivienda) as propiedades_count,
+                    COUNT(DISTINCT vh.id_vehiculo) as vehiculos_count
+                FROM Usuario u
+                LEFT JOIN Publicacion p ON u.id_usuario = p.Usuario_id_usuario
+                LEFT JOIN Vivienda v ON p.Vivienda_id_vivienda = v.id_vivienda
+                LEFT JOIN Vehiculo vh ON p.Vehiculo_id_vehiculo = vh.id_vehiculo
+                WHERE u.id_usuario = ?
+            """, (id,))
+            stats = cursor.fetchone()
+            usuario_dict.update({
+                'propiedades_count': stats.propiedades_count,
+                'vehiculos_count': stats.vehiculos_count
+            })
+        else:
+            # Contar reservas para clientes
+            cursor.execute("""
+                SELECT COUNT(*) as reservas_count
+                FROM Clientes_Potenciales
+                WHERE Usuario_id_usuario = ?
+            """, (id,))
+            stats = cursor.fetchone()
+            usuario_dict['reservas_count'] = stats.reservas_count
+
+        return jsonify(usuario_dict)
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': 'Error al obtener datos del usuario'}), 500
+    
+    finally:
+        cursor.close()
+        conn.close()
