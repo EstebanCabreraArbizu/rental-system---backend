@@ -1,16 +1,30 @@
-{% extends "layout_login.html" %}
+{% extends "users/layout_login.html" %}
 {% block body %}
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-{% for message in messages %}
-<div class="alert alert-danger alert-dismissible fade show" role="alert"
-	style="background-color: #dc3545; color: white;">
-	{{ message }}
-	<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<style>
+    .flash-container {
+        position: fixed;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        width: auto;
+        max-width: 90%;
+		word-wrap: break-word;
+    }
+</style>
+
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category}} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 </div>
-{% endfor %}
-{% endif %}
-{% endwith %}
 
 <div class="login-container">
 	<h2 class="login-title">Iniciar Sesión</h2>
@@ -42,19 +56,28 @@
 			<a href="#">¿Olvidaste tu contraseña?</a>
 		</div>
 		<div class="mt-2 text-center">
-			<small>¿No tienes cuenta? <a href="#">Regístrate aquí</a></small>
+			<small>¿No tienes cuenta? <a href="{{url_for('users.add_user')}}">Regístrate aquí</a></small>
 		</div>
 	</form>
 </div>
 <script>
-	function loginWithGoogle() {
-		// Aquí se puede integrar la autenticación con Google (OAuth)
-		alert('Iniciar sesión con Google');
+	function togglePassword() {
+		const passwordInput = document.getElementById('password');
+		const icon = document.querySelector('.fa-eye, .fa-eye-slash');
+
+		if (passwordInput.type === 'password') {
+			passwordInput.type = 'text';
+			icon.classList.replace('fa-eye', 'fa-eye-slash');
+		} else {
+			passwordInput.type = 'password';
+			icon.classList.replace('fa-eye-slash', 'fa-eye');
+		}
 	}
 
-	function loginWithFacebook() {
-		// Aquí se puede integrar la autenticación con Facebook (OAuth)
-		alert('Iniciar sesión con Facebook');
-	}
+	document.getElementById('loginForm').addEventListener('submit', function (e) {
+		const submitBtn = document.getElementById('submitBtn');
+		submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Iniciando sesión...';
+		submitBtn.disabled = true;
+	});
 </script>
 {% endblock %}

@@ -1,0 +1,149 @@
+{% extends "users/layout_create-account.html"%}
+{% block body %}
+<style>
+	.flash-container {
+		position: fixed;
+		top: 10px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 9999;
+		width: auto;
+		max-width: 90%;
+		word-wrap: break-word;
+	}
+</style>
+
+<div class="flash-container">
+	{% with messages = get_flashed_messages(with_categories=true) %}
+		{% if messages %}
+			{% for category, message in messages %}
+				<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+					{{ message }}
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+				</div>
+			{% endfor %}
+		{% endif %}
+	{% endwith %}
+</div>
+
+<div class="register-container">
+	<div class="register-header">
+		<img src="https://i.imgur.com/YEK3YQp.png" alt="RentAll Logo">
+		<h2>Crear tu cuenta</h2>
+		<p class="text-muted">Únete a nuestra comunidad</p>
+	</div>
+
+	<div class="steps-indicator">
+		<div class="step-dot active">1</div>
+		<div class="step-dot">2</div>
+		<div class="step-dot">3</div>
+	</div>
+
+	<form id="registerForm" method="POST" action="{{ url_for('users.add_user') }}" enctype="multipart/form-data">
+		<!-- Paso 1: Datos Básicos -->
+		<div id="step1" class="step active">
+			<div class="social-buttons mb-4">
+				<button type="button" class="btn-social btn-google">
+					<i class="fab fa-google me-2"></i>Registrarse con Google
+				</button>
+				<button type="button" class="btn-social btn-facebook">
+					<i class="fab fa-facebook-f me-2"></i>Registrarse con Facebook
+				</button>
+			</div>
+
+			<div class="text-center mb-4">
+				<span class="text-muted">O regístrate con tu correo</span>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="nombre" name="nombre" placeholder="Nombre" maxlength="10"
+					required>
+				<label for="nombre"><i class="fas fa-user me-2"></i>Nombre</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="email" class="form-control" id="correo" name="correo" placeholder="Correo" maxlength="10"
+					required>
+				<label for="correo"><i class="fas fa-envelope me-2"></i>Correo electrónico</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="password" class="form-control" id="contrasenia" name="contrasenia" placeholder="Contraseña"
+					maxlength="15" required>
+				<label for="contrasenia"><i class="fas fa-lock me-2"></i>Contraseña</label>
+			</div>
+
+			<div class="form-floating mb-4">
+				<input type="password" class="form-control" id="confirmContrasenia" name="confirmContrasenia"
+					placeholder="Confirmar Contraseña" maxlength="15" required>
+				<label for="confirmContrasenia"><i class="fas fa-lock me-2"></i>Confirmar Contraseña</label>
+			</div>
+
+			<button type="button" class="btn btn-next w-100" onclick="nextStep()">
+				Siguiente <i class="fas fa-arrow-right ms-2"></i>
+			</button>
+		</div>
+
+		<!-- Paso 2: Datos Personales -->
+		<div id="step2" class="step">
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="docIdentidad" name="docIdentidad"
+					placeholder="Documento de Identidad" maxlength="10" required>
+				<label for="docIdentidad"><i class="fas fa-id-card me-2"></i>Documento de Identidad</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="tel" class="form-control" id="telefono" name="telefono" placeholder="Teléfono"
+					maxlength="11" required>
+				<label for="telefono"><i class="fas fa-phone me-2"></i>Teléfono</label>
+			</div>
+
+			<div class="form-floating mb-4">
+				<input type="text" class="form-control" id="direccion" name="direccion" placeholder="Dirección"
+					maxlength="30" required>
+				<label for="direccion"><i class="fas fa-home me-2"></i>Dirección</label>
+			</div>
+
+			<div class="d-flex gap-3">
+				<button type="button" class="btn btn-prev w-50" onclick="prevStep()">
+					<i class="fas fa-arrow-left me-2"></i> Anterior
+				</button>
+				<button type="button" class="btn btn-next w-50" onclick="nextStep()">
+					Siguiente <i class="fas fa-arrow-right ms-2"></i>
+				</button>
+			</div>
+		</div>
+
+		<!-- Paso 3: Imagen y Tipo de Usuario -->
+		<div id="step3" class="step">
+			<div class="text-center mb-4">
+				<img src="https://via.placeholder.com/150" alt="Vista previa" id="avatarPreview">
+				<div class="upload-btn-wrapper">
+					<button class="btn btn-outline-primary">
+						<i class="fas fa-camera me-2"></i>Subir foto de perfil
+					</button>
+					<input type="file" id="imagen" name="imagen" accept="image/*" required>
+				</div>
+			</div>
+
+			<div class="form-floating mb-4">
+				<select class="form-control" id="tipoUsuario" name="tipoUsuario" required>
+					<option value="">Seleccione una opción</option>
+					<option value="1">Cliente</option>
+					<option value="2">Propietario</option>
+				</select>
+				<label for="tipoUsuario"><i class="fas fa-users me-2"></i>Tipo de Usuario</label>
+			</div>
+
+			<div class="d-flex gap-3">
+				<button type="button" class="btn btn-prev w-50" onclick="prevStep()">
+					<i class="fas fa-arrow-left me-2"></i> Anterior
+				</button>
+				<button type="submit" class="btn btn-next w-50">
+					<i class="fas fa-check me-2"></i> Crear Cuenta
+				</button>
+			</div>
+		</div>
+	</form>
+</div>
+{% endblock %}

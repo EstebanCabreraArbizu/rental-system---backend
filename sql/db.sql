@@ -1,18 +1,18 @@
 -- Created by Vertabelo (http://vertabelo.com)
--- Last modification date: 2025-02-10 16:56:56.654
+-- Last modification date: 2025-02-17 17:21:44.605
 
 -- tables
 -- Table: Ambiente
 CREATE TABLE `Ambiente` (
-    `id_ambiente` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
+    `id_ambiente` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
     `descripcion` nvarchar(30)  NOT NULL,
     CONSTRAINT `Ambiente_pk` PRIMARY KEY (`id_ambiente`)
 );
 
 -- Table: Ambiente_Vivienda
 CREATE TABLE `Ambiente_Vivienda` (
-    `id_am_vi` int  NOT NULL,
+    `id_am_vi` int  NOT NULL AUTO_INCREMENT,
     `Ambiente_id` int  NOT NULL,
     `Vivienda_id` int  NOT NULL,
     CONSTRAINT `Ambiente_Vivienda_pk` PRIMARY KEY (`id_am_vi`)
@@ -20,9 +20,9 @@ CREATE TABLE `Ambiente_Vivienda` (
 
 -- Table: Clientes_Potenciales
 CREATE TABLE `Clientes_Potenciales` (
-    `id_clientes` int  NOT NULL,
+    `id_clientes` int  NOT NULL AUTO_INCREMENT,
     `fecha_contacto` datetime  NOT NULL,
-    `mensaje` nvarchar(20)  NOT NULL,
+    `mensaje` nvarchar(25)  NOT NULL,
     `Usuario_id_usuario` int  NOT NULL,
     `Publicacion_id_publicacion` int  NOT NULL,
     CONSTRAINT `Clientes_Potenciales_pk` PRIMARY KEY (`id_clientes`)
@@ -30,15 +30,15 @@ CREATE TABLE `Clientes_Potenciales` (
 
 -- Table: Equipamiento
 CREATE TABLE `Equipamiento` (
-    `id_equipamiento` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
-    `descripcion` nvarchar(10)  NOT NULL,
+    `id_equipamiento` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
+    `descripcion` nvarchar(30)  NOT NULL,
     CONSTRAINT `Equipamiento_pk` PRIMARY KEY (`id_equipamiento`)
 );
 
 -- Table: Equipamiento_Vehiculo
 CREATE TABLE `Equipamiento_Vehiculo` (
-    `id_equi_vehi` int  NOT NULL,
+    `id_equi_vehi` int  NOT NULL AUTO_INCREMENT,
     `Vehiculo_id` int  NOT NULL,
     `Equipamiento_id` int  NOT NULL,
     CONSTRAINT `Equipamiento_Vehiculo_pk` PRIMARY KEY (`id_equi_vehi`)
@@ -46,8 +46,8 @@ CREATE TABLE `Equipamiento_Vehiculo` (
 
 -- Table: Notificacion
 CREATE TABLE `Notificacion` (
-    `id_notificacion` int  NOT NULL,
-    `tipo_publicacion` nvarchar(10)  NOT NULL,
+    `id_notificacion` int  NOT NULL AUTO_INCREMENT,
+    `tipo_publicacion` nvarchar(20)  NOT NULL,
     `precio_rango_min` float(10,2)  NOT NULL,
     `precio_rango_max` float(10,2)  NOT NULL,
     `distrito_preferido` nvarchar(20)  NOT NULL,
@@ -58,42 +58,42 @@ CREATE TABLE `Notificacion` (
 
 -- Table: Publicacion
 CREATE TABLE `Publicacion` (
-    `id_publicacion` int  NOT NULL,
+    `id_publicacion` int  NOT NULL AUTO_INCREMENT,
     `fecha_publicacion` datetime  NOT NULL,
-    `titulo` nvarchar(10)  NOT NULL,
+    `titulo` nvarchar(20)  NOT NULL,
     `descripcion` nvarchar(50)  NOT NULL,
     `precio_unitario` float(10,2)  NOT NULL,
-    `distrito` nvarchar(10)  NOT NULL,
+    `distrito` nvarchar(20)  NOT NULL,
     `direccion` nvarchar(30)  NOT NULL,
     `latitud` int  NOT NULL,
     `longitud` int  NOT NULL,
-    `estado` nvarchar(10)  NOT NULL,
+    `estado` nvarchar(15)  NOT NULL,
     `imagenes` json  NOT NULL,
     `Usuario_id_usuario` int  NOT NULL,
-    `Vivienda_id_vivienda` int  NOT NULL,
-    `Vehiculo_id_vehiculo` int  NOT NULL,
+    `Vivienda_id_vivienda` int  NULL,
+    `Vehiculo_id_vehiculo` int  NULL,
     CONSTRAINT `Publicacion_pk` PRIMARY KEY (`id_publicacion`)
 );
 
 -- Table: Seguro
 CREATE TABLE `Seguro` (
-    `id_seguro` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
-    `descripcion` nvarchar(10)  NOT NULL,
+    `id_seguro` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
+    `descripcion` nvarchar(30)  NOT NULL,
     CONSTRAINT `Seguro_pk` PRIMARY KEY (`id_seguro`)
 );
 
 -- Table: Servicio
 CREATE TABLE `Servicio` (
-    `id_servicio` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
+    `id_servicio` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
     `descripcion` nvarchar(30)  NOT NULL,
     CONSTRAINT `Servicio_pk` PRIMARY KEY (`id_servicio`)
 );
 
 -- Table: Servicio_Vivienda
 CREATE TABLE `Servicio_Vivienda` (
-    `id_ser_vi` int  NOT NULL,
+    `id_ser_vi` int  NOT NULL AUTO_INCREMENT,
     `Servicio_id` int  NOT NULL,
     `Vivienda_id` int  NOT NULL,
     CONSTRAINT `Servicio_Vivienda_pk` PRIMARY KEY (`id_ser_vi`)
@@ -101,14 +101,14 @@ CREATE TABLE `Servicio_Vivienda` (
 
 -- Table: Tipo_usuario
 CREATE TABLE `Tipo_usuario` (
-    `id_tipo_u` int  NOT NULL,
-    `nombre` nvarchar(15)  NOT NULL,
+    `id_tipo_u` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
     CONSTRAINT `Tipo_usuario_pk` PRIMARY KEY (`id_tipo_u`)
 );
 
 -- Table: Tipo_vehiculo
 CREATE TABLE `Tipo_vehiculo` (
-    `id_tipo_ve` int  NOT NULL,
+    `id_tipo_ve` int  NOT NULL AUTO_INCREMENT,
     `nombre` nvarchar(20)  NOT NULL,
     `Vehiculo_id_vehiculo` int  NOT NULL,
     CONSTRAINT `Tipo_vehiculo_pk` PRIMARY KEY (`id_tipo_ve`)
@@ -116,8 +116,8 @@ CREATE TABLE `Tipo_vehiculo` (
 
 -- Table: Tipo_vivienda
 CREATE TABLE `Tipo_vivienda` (
-    `id_tipo_v` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
+    `id_tipo_v` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
     `capacidad` int  NOT NULL,
     `pisos` int  NOT NULL,
     CONSTRAINT `Tipo_vivienda_pk` PRIMARY KEY (`id_tipo_v`)
@@ -125,23 +125,23 @@ CREATE TABLE `Tipo_vivienda` (
 
 -- Table: Usuario
 CREATE TABLE `Usuario` (
-    `id_usuario` int  NOT NULL,
-    `nombre` nvarchar(10)  NOT NULL,
-    `correo` nvarchar(10)  NOT NULL,
-    `contrasenia` nvarchar(15)  NOT NULL,
+    `id_usuario` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
+    `correo` nvarchar(30)  NOT NULL,
+    `contrasenia` nvarchar(30)  NOT NULL,
     `doc_identidad` nvarchar(10)  NOT NULL,
     `telefono` nvarchar(11)  NOT NULL,
     `direccion` nvarchar(30)  NOT NULL,
     `fecha_ingreso` datetime  NOT NULL,
-    `preferencias` nvarchar(10)  NOT NULL,
-    `imagen_url` nvarchar(20)  NOT NULL,
+    `preferencias` nvarchar(20)  NOT NULL,
+    `imagen_url` nvarchar(50)  NOT NULL,
     `Tipo_usuario_id_tipo_u` int  NOT NULL,
     CONSTRAINT `Usuario_pk` PRIMARY KEY (`id_usuario`)
 );
 
 -- Table: Vehiculo
 CREATE TABLE `Vehiculo` (
-    `id_vehiculo` int  NOT NULL,
+    `id_vehiculo` int  NOT NULL AUTO_INCREMENT,
     `marca` nvarchar(10)  NOT NULL,
     `modelo` nvarchar(20)  NOT NULL,
     `anio` date  NOT NULL,
@@ -158,9 +158,9 @@ CREATE TABLE `Vehiculo` (
 
 -- Table: Vivienda
 CREATE TABLE `Vivienda` (
-    `id_vivienda` int  NOT NULL,
+    `id_vivienda` int  NOT NULL AUTO_INCREMENT,
     `fecha_construccion` datetime  NOT NULL,
-    `dimensiones` nvarchar(15)  NOT NULL,
+    `dimensiones` nvarchar(20)  NOT NULL,
     `antiguedad` date  NOT NULL,
     `Tipo_vivienda_id` int  NOT NULL,
     CONSTRAINT `Vivienda_pk` PRIMARY KEY (`id_vivienda`)
