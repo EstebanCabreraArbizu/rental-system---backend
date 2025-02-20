@@ -1,19 +1,32 @@
 import time
 from datetime import timedelta
 from urllib.parse import urlparse
-from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify
+from flask import Blueprint, request, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.db import mysql
 from app.models.user import User
 
 users = Blueprint('users', __name__, template_folder='app/templates')
 
-
-@users.route('/')
 @users.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('users.dashboard'))
+        next_url = request.args.get('next')
+        if not next_url or not urlparse(next_url).scheme or urlparse(next_url).netloc != request.host:
+            user_type_urls = {
+		        'Admin': url_for('admin.dashboard'),
+		        'Cliente': url_for('users.login'),
+		        'Propietario': url_for('owner.dashboard')
+		    }
+            print(current_user.tipo_usuario)
+            next_url = user_type_urls.get(current_user.tipo_usuario)
+            print('***', next_url, '***')
+            if not next_url or next_url == None:
+                time.sleep(0.5)
+                flash('Tipo de usuario no reconocido. Por favor, contacte al administrador.', 'danger')
+                return redirect(url_for('users.login'))
+        print('------', next_url)
+        return redirect(next_url)
     if request.method == 'GET':
         return render_template('users/login.html')
     
@@ -56,11 +69,21 @@ def login():
             flash(f'¡Bienvenido {user.nombre}!', 'success')
             
             # Obtener la URL a la que el usuario intentaba acceder
-            next_page = request.args.get('next')
-            if not next_page or urlparse(next_page).netloc != '':
-                next_page = url_for('users.dashboard')
-            
-            return redirect(next_page)
+            next_url = request.args.get('next')
+            if not next_url or not urlparse(next_url).scheme or urlparse(next_url).netloc != request.host:
+                user_type_urls = {
+                    'Admin': url_for('admin.dashboard'),
+                    'Cliente': url_for('users.login'),
+                    'Propietario': url_for('owner.dashboard')
+                }
+                next_url = user_type_urls.get(user.tipo_usuario)
+                print('***',next_url, '***')
+                if not next_url:
+                    time.sleep(0.5)
+                    flash('Tipo de usuario no reconocido. Por favor, contacte al administrador.', 'danger')
+                    return redirect(url_for('users.login'))
+            print('------', next_url)
+            return redirect(next_url)
         else:
             # Agregar pequeño delay para prevenir enumeración de usuarios
             time.sleep(0.5)
@@ -122,271 +145,9 @@ def add_user():
                 cur.close()
     return render_template('users/create_account.html')
 
-@users.route('/dashboard')
-@login_required
-def dashboard():
-    try:
-        cur = mysql.connection.cursor()
-        
-        # Verificar si el usuario aún existe en la base de datos
-        cur.execute("""
-            SELECT id_usuario 
-            FROM Usuario 
-            WHERE id_usuario = %s AND correo = %s
-        """, (current_user.id, current_user.correo))
-        
-        user_exists = cur.fetchone()
-        
-        if not user_exists:
-            logout_user()
-            flash('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.', 'error')
-            return redirect(url_for('users.login'))
-        
-		# Obtener estadísticas generales
-        
-        stats = {}
-        print(stats)
-        # Total de usuarios
-        cur.execute("""
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN Tipo_usuario_id_tipo_u = 1 THEN 1 ELSE 0 END) as clientes,
-                SUM(CASE WHEN Tipo_usuario_id_tipo_u = 2 THEN 1 ELSE 0 END) as propietarios
-            FROM Usuario
-        """)
-        user_stats = cur.fetchone()
-        print(user_stats)
-        print('------------------')
-        stats['total_usuarios'] = user_stats['total']
-        stats['total_clientes'] = user_stats['clientes']
-        stats['total_propietarios'] = user_stats['propietarios']
-        # Obtener lista de usuarios
-        print('***************************')
-        cur.execute("""
-            SELECT 
-                u.id_usuario,
-                u.nombre,
-                u.correo,
-                u.telefono,
-                u.fecha_ingreso,
-                t.nombre as tipo_usuario
-            FROM Usuario u
-            JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
-            ORDER BY u.fecha_ingreso DESC
-        """)
-        usuarios = cur.fetchall()
-        
-        cur.execute("""
-			SELECT
-              p.id_publicacion,
-              p.titulo,
-              p.precio_unitario,
-              p.fecha_publicacion,
-              u.nombre as propietario
-            FROM Publicacion p
-            JOIN Usuario u ON p.Usuario_id_usuario = u.id_usuario
-	        ORDER BY fecha_publicacion DESC
-            
-              """)
-        publicaciones = cur.fetchall()
-        print('***************************')
-        return render_template('users/dashboard.html',
-                           stats=stats,
-                           usuarios=usuarios,
-                           publicaciones = publicaciones,
-                           current_user=current_user)
-
-    except Exception as e:
-        flash(f'Error al cargar el dashboard: {str(e)}', 'danger')
-        return render_template('users/dashboard.html', stats={})
-    finally:
-        cur.close()
-        
-
-@users.route('/usuario/<int:id>')
-def get_usuario(id):
-    try:
-        cursor = mysql.connection.cursor()
-        
-        # Obtener datos básicos del usuario
-        cursor.execute("""
-            SELECT u.*, t.nombre as tipo_usuario 
-            FROM Usuario u 
-            JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u 
-            WHERE u.id_usuario = %s
-        """, (id,))
-        
-        usuario = cursor.fetchone()
-        
-        if not usuario:
-            return jsonify({'error': 'Usuario no encontrado'}), 404
-
-        # Convertir a diccionario
-        usuario_dict = {
-            'id_usuario': usuario['id_usuario'],
-			'nombre': usuario['nombre'],
-			'correo': usuario['correo'],
-			'doc_identidad': usuario['doc_identidad'],
-			'telefono': usuario['telefono'],
-			'direccion': usuario['direccion'],
-			'fecha_ingreso': usuario['fecha_ingreso'],
-			'preferencias': usuario['preferencias'],
-			'imagen_url': usuario['imagen_url'],
-			'tipo_usuario': usuario['Tipo_usuario_id_tipo_u']
-        }
-
-        # Obtener estadísticas adicionales según el tipo de usuario
-        if usuario['tipo_usuario'] == 'Propietario':
-            # Contar propiedades y vehículos
-            cursor.execute("""
-                SELECT 
-                    COUNT(DISTINCT v.id_vivienda) as propiedades_count,
-                    COUNT(DISTINCT vh.id_vehiculo) as vehiculos_count
-                FROM Usuario u
-                LEFT JOIN Publicacion p ON u.id_usuario = p.Usuario_id_usuario
-                LEFT JOIN Vivienda v ON p.Vivienda_id_vivienda = v.id_vivienda
-                LEFT JOIN Vehiculo vh ON p.Vehiculo_id_vehiculo = vh.id_vehiculo
-                WHERE u.id_usuario = %s
-            """, (id,))
-            stats = cursor.fetchone()
-            usuario_dict.update({
-                'propiedades_count': stats['propiedades_count'],
-                'vehiculos_count': stats['vehiculos_count']
-            })
-        else:
-            # Contar reservas para clientes
-            cursor.execute("""
-                SELECT COUNT(*) as reservas_count
-                FROM Clientes_Potenciales
-                WHERE Usuario_id_usuario = %s
-            """, (id,))
-            stats = cursor.fetchone()
-            usuario_dict['reservas_count'] = stats['reservas_count']
-
-        return jsonify(usuario_dict)
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({'error': 'Error al obtener datos del usuario'}), 500
-    
-    finally:
-        cursor.close()
-
-@users.route('/publicacion/<int:id>')
-def get_publicacion(id):
-    try:
-        cursor = mysql.connection.cursor()
-        
-        # Obtener datos básicos del usuario
-        cursor.execute("""
-            SELECT p.*, u.nombre as propietario 
-            FROM Publicacion p 
-            JOIN Usuario u ON p.Usuario_id_usuario = u.id_usuario 
-            WHERE p.id_publicacion = %s
-        """, (id,))
-        
-        publicacion = cursor.fetchone()
-        
-        if not publicacion:
-            return jsonify({'error': 'Publicación no encontrada'}), 404
-        # Convertir a diccionario
-        
-        publicacion_dict = {
-            'id_publicacion': publicacion['id_publicacion'],
-            'titulo': publicacion['titulo'],
-            'descripcion': publicacion['descripcion'],
-            'precio_unitario': publicacion['precio_unitario'],
-            'fecha_publicacion': publicacion['fecha_publicacion'],
-            'distrito': publicacion['distrito'],
-            'direccion': publicacion['direccion'],
-            'latitud': publicacion['latitud'],
-            'longitud':publicacion['longitud'],
-            'imagenes': publicacion['imagenes'],
-            'estado': publicacion['estado'],
-            'propietario': publicacion['propietario'],
-            'vivienda_registrada': publicacion['Vivienda_id_vivienda'],
-            'vehículo_registrado': publicacion['Vehiculo_id_vehiculo']
-        }
-
-        return jsonify(publicacion_dict)
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({'error': 'Error al obtener datos de la publicación'}), 500
-    
-    finally:
-        cursor.close()
-
 @users.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash('Has cerrado sesión exitosamente', 'info')
     return redirect(url_for('users.login'))
-
-# @users.route('/add_product', methods=['POST'])
-# def add_product():
-#     if request.method == 'POST':
-#         name = request.form['name']
-#         description = request.form['description']
-#         category = request.form['category']
-#         unit_price = request.form['unit_price']
-#         stock = request.form['stock']
-#         try:
-#             cur = mysql.connection.cursor()
-#             cur.execute(
-#                 "INSERT INTO users (name,description,category,unit_price,stock) VALUES (%s,%s,%s,%s,%s)",
-#                 (name, description, category, unit_price, stock)
-#             )
-#             mysql.connection.commit()
-#             cur.close()
-#             flash('Product Added Successfully')
-#             return redirect(url_for('users.Index'))
-#         except Exception as e:
-#             flash(e.args[1])
-#             return redirect(url_for('users.Index'))
-
-
-# @users.route('/edit/<id>', methods=['POST', 'GET'])
-# def get_product(id):
-#     cur = mysql.connection.cursor()
-#     cur.execute('SELECT * FROM users WHERE id_products = %s', (id))
-#     data = cur.fetchall()
-#     cur.close()
-#     print(data[0])
-#     return render_template('edit-product.html', product=data[0])
-
-
-# @users.route('/update/<id>', methods=['POST'])
-# def update_product(id):
-#     if request.method == 'POST':
-#         name = request.form['name']
-#         description = request.form['description']
-#         category = request.form['category']
-#         unit_price = request.form['unit_price']
-#         stock = request.form['stock']
-#         cur = mysql.connection.cursor()
-#         cur.execute("""
-#             UPDATE users
-#             SET name = %s,
-#                 description = %s,
-#                 category = %s,
-#                 unit_price = %s,
-#                 stock = %s
-#             WHERE id_products = %s
-#         """, (name, description, category, unit_price, stock, id))
-#         flash('Product Updated Successfully')
-#         mysql.connection.commit()
-#         cur.close()
-#         return redirect(url_for('users.Index'))
-
-
-# @users.route('/delete/<string:id>', methods=['POST', 'GET'])
-# def delete_product(id):
-#     cur = mysql.connection.cursor()
-#     print(id)
-#     cur.execute('DELETE FROM users WHERE id_products = {0}'.format(id))
-#     mysql.connection.commit()
-#     cur.close()
-#     flash('Product Removed Successfully')
-#     return redirect(url_for('users.Index'))

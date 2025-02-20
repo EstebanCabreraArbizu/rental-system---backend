@@ -21,8 +21,15 @@ class User(UserMixin):
         cur = mysql.connection.cursor()
         try:
             cur.execute("""
-                SELECT id_usuario, nombre, correo, Tipo_usuario_id_tipo_u 
-                FROM Usuario WHERE id_usuario = %s
+            SELECT
+                u.id_usuario,
+                u.nombre,
+                u.correo,
+                u.contrasenia,
+                t.nombre as tipo_usuario
+            FROM Usuario u
+            INNER JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
+            WHERE u.id_usuario = %s
             """, (user_id,))
             user = cur.fetchone()
             if user:
@@ -30,7 +37,7 @@ class User(UserMixin):
                     id_usuario=user['id_usuario'],
                     nombre=user['nombre'],
                     correo=user['correo'],
-                    tipo_usuario=user['Tipo_usuario_id_tipo_u']
+                    tipo_usuario=user['tipo_usuario']
                 )
             return None
         finally:

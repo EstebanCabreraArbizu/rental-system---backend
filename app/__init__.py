@@ -15,4 +15,9 @@ app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=7)
 app.config['SESSION_PROTECTION'] = 'strong'
 # Import routes after app initialization to avoid circular imports
 from app.routes.users import users
+from app.routes.admin import admin
+from app.routes.owner import owner
 app.register_blueprint(users)
+app.register_blueprint(admin, url_prefix = '/admin')
+app.register_blueprint(owner, url_prefix = '/owner')
+print(app.url_map)
