@@ -185,130 +185,66 @@
     }
   </style>
 </head>
-<body>
-  <div class="login-container">
-    <div class="login-header">
-      <img src="https://i.imgur.com/YEK3YQp.png" alt="RentAll Logo">
-      <h2>Bienvenido</h2>
-      <p class="text-muted">Inicia sesión en tu cuenta</p>
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<body class="bg-light">
+  <div class="container">
+    <div class="row justify-content-center mt-5">
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+          <div class="card-body p-5">
+            <h3 class="text-center mb-4">Iniciar Sesión</h3>
+            
+            <form id="loginForm">
+              <div class="form-floating mb-3">
+                <input type="email" class="form-control" id="correo" name="correo" required>
+                <label for="correo">Correo electrónico</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="contrasenia" name="contrasenia" required>
+                <label for="contrasenia">Contraseña</label>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                Iniciar Sesión
+              </button>
+            </form>
           </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <form id="loginForm" method="POST" action="{{ url_for('auth.login') }}">
-      <div class="input-group">
-        <span class="input-group-text">
-          <i class="fas fa-envelope input-icon"></i>
-        </span>
-        <input type="email" class="form-control" id="email" name="email"
-          placeholder="Correo electrónico" required autocomplete="email">
-      </div>
-
-      <div class="input-group">
-        <span class="input-group-text">
-          <i class="fas fa-lock input-icon"></i>
-        </span>
-        <input type="password" class="form-control" id="password" name="password"
-          placeholder="Contraseña" required>
-        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
-          <i class="fas fa-eye"></i>
-        </button>
-      </div>
-
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" id="remember" name="remember">
-          <label class="form-check-label" for="remember">Recordarme</label>
         </div>
-        <a href="#" class="text-primary">¿Olvidaste tu contraseña?</a>
       </div>
-
-      <button type="submit" class="btn btn-primary w-100" id="submitBtn">
-        Iniciar Sesión
-      </button>
-
-      <div class="social-login text-center">
-        <span>O continúa con</span>
-      </div>
-
-      <div class="social-buttons">
-        <button type="button" class="btn-social btn-google">
-          <i class="fab fa-google me-2"></i>Google
-        </button>
-        <button type="button" class="btn-social btn-facebook">
-          <i class="fab fa-facebook-f me-2"></i>Facebook
-        </button>
-      </div>
-
-      <div class="register-link">
-        ¿No tienes una cuenta? <a href="{{ url_for('auth.register') }}">Regístrate aquí</a>
-      </div>
-    </form>
+    </div>
   </div>
 
-  <!-- Bootstrap Bundle JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- JavaScript Personalizado -->
   <script>
-    function togglePassword() {
-      const passwordInput = document.getElementById('password');
-      const icon = document.querySelector('.fa-eye, .fa-eye-slash');
-      
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-      } else {
-        passwordInput.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
-      }
-    }
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        correo: document.getElementById('correo').value,
+        contrasenia: document.getElementById('contrasenia').value
+    };
 
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Iniciando sesión...';
-      submitBtn.disabled = true;
-
-      fetch(this.action, {
-        method: 'POST',
-        body: new FormData(this),
-        headers: {
-          'Accept': 'application/json'
-        }
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Error en la respuesta del servidor');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Respuesta del servidor:', data);
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
-          window.location.href = data.redirect;
+            window.location.href = data.redirect;
         } else {
-          submitBtn.innerHTML = 'Iniciar Sesión';
-          submitBtn.disabled = false;
-          alert(data.message || 'Error al iniciar sesión');
+            alert(data.message || 'Error al iniciar sesión');
         }
-      })
-      .catch(error => {
+    } catch (error) {
         console.error('Error:', error);
-        submitBtn.innerHTML = 'Iniciar Sesión';
-        submitBtn.disabled = false;
-        alert('Error al iniciar sesión. Por favor, intenta nuevamente.');
-      });
-    });
+        alert('Error al procesar el inicio de sesión');
+    }
+  });
   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
