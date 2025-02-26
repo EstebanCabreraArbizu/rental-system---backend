@@ -4,11 +4,12 @@ from app import login_manager
 from app.db import mysql
 
 class User(UserMixin):
-    def __init__(self, id_usuario, nombre, correo, tipo_usuario):
+    def __init__(self, id_usuario, nombre, correo, tipo_usuario, imagen_url):
         self.id = id_usuario
         self.nombre = nombre
         self.correo = correo
         self.tipo_usuario = tipo_usuario
+        self.imagen_url = imagen_url
         self._is_authenticated = True  # Agregar esta línea
     @property
     def is_authenticated(self):
@@ -26,7 +27,8 @@ class User(UserMixin):
                 u.nombre,
                 u.correo,
                 u.contrasenia,
-                t.nombre as tipo_usuario
+                t.nombre as tipo_usuario,
+                u.imagen_url
             FROM Usuario u
             INNER JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
             WHERE u.id_usuario = %s
@@ -37,7 +39,8 @@ class User(UserMixin):
                     id_usuario=user['id_usuario'],
                     nombre=user['nombre'],
                     correo=user['correo'],
-                    tipo_usuario=user['tipo_usuario']
+                    tipo_usuario=user['tipo_usuario'],
+                    imagen_url=user['imagen_url']
                 )
             return None
         finally:
@@ -48,7 +51,7 @@ class User(UserMixin):
         cur = mysql.connection.cursor()
         try:
             cur.execute("""
-                SELECT u.id_usuario, u.nombre, u.correo, t.nombre as tipo_usuario 
+                SELECT u.id_usuario, u.nombre, u.correo, t.nombre as tipo_usuario, u.imagen_url 
                 FROM Usuario u 
                 JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u 
                 WHERE u.correo = %s
@@ -59,7 +62,8 @@ class User(UserMixin):
                     id_usuario=user['id_usuario'],
                     nombre=user['nombre'],
                     correo=user['correo'],
-                    tipo_usuario=user['tipo_usuario']
+                    tipo_usuario=user['tipo_usuario'],
+                    imagen_url=user['imagen_url']
                 )
             return None
         finally:

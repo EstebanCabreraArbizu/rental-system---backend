@@ -58,7 +58,7 @@
 			</div>
 			<div class="dropdown">
 				<button class="btn btn-link d-flex align-items-center gap-2" type="button" id="userDropdown" data-bs-toggle="dropdown">
-					<img src="https://i.pravatar.cc/32" class="rounded-circle" alt="Usuario">
+					<img src="{{current_user.imagen_url}}" class="rounded-circle" alt="Usuario">
 					<span class="d-none d-md-block">{{ current_user.nombre }}</span>
 				</button>
 				<ul class="dropdown-menu dropdown-menu-end">
@@ -285,7 +285,7 @@
 								<td>{{publicacion.propietario}}</td>
 								<td>
 									<button class="btn btn-sm btn-info" onclick="verDetallesPublicacion({{ publicacion.id_publicacion }})">
-										<i class="fas fa-eye"></i> Ver más
+										<i class="fas fa-eye">Ver más</i> 
 									</button>
 								</td>
 							</tr>

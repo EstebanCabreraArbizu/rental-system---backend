@@ -20,4 +20,3 @@ from app.routes.owner import owner
 app.register_blueprint(users)
 app.register_blueprint(admin, url_prefix = '/admin')
 app.register_blueprint(owner, url_prefix = '/owner')
-print(app.url_map)
