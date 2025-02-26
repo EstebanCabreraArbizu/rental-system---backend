@@ -47,7 +47,7 @@
                             </div>
                         </div>
 
-                        <!-- Información básica -->
+                        <!-- Información básica de la publicación -->
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h5 class="mb-0">Información Básica</h5>
@@ -77,23 +77,84 @@
                                 <h5 class="mb-0">Detalles de la Vivienda</h5>
                             </div>
                             <div class="card-body">
+                                <!-- Tipo de Vivienda -->
                                 <div class="mb-3">
                                     <label for="tipoVivienda" class="form-label">Tipo de Vivienda</label>
-                                    <select class="form-select" id="tipoVivienda" name="tipo_vivienda">
+                                    <select class="form-select" id="tipoVivienda" name="tipo_vivienda" required>
                                         <option value="">Seleccione...</option>
-                                        <option value="1">Casa</option>
-                                        <option value="2">Departamento</option>
-                                        <option value="3">Habitación</option>
+                                        {% for tipo in tipos_vivienda %}
+                                        <option value="{{ tipo.id_tipo_v }}">
+                                            {{ tipo.nombre }} ({{ tipo.pisos }} piso{% if tipo.pisos > 1 %}s{% endif %}, capacidad {{ tipo.capacidad }} personas)
+                                        </option>
+                                        {% endfor %}
                                     </select>
                                 </div>
+
+                                <!-- Fecha de Construcción -->
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="habitaciones" class="form-label">Habitaciones</label>
-                                        <input type="number" class="form-control" id="habitaciones">
+                                        <label for="fechaConstruccion" class="form-label">Fecha de Construcción</label>
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="fechaConstruccion" 
+                                               name="fecha_construccion"
+                                               max="{{ '2024-12-31' }}"
+                                               required>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="banos" class="form-label">Baños</label>
-                                        <input type="number" class="form-control" id="banos">
+                                        <label for="antiguedad" class="form-label">Antigüedad</label>
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="antiguedad" 
+                                               name="antiguedad"
+                                               max="{{ '2024-12-31' }}"
+                                               required>
+                                    </div>
+                                </div>
+
+                                <!-- Dimensiones -->
+                                <div class="mb-3">
+                                    <label for="dimensiones" class="form-label">Dimensiones (m²)</label>
+                                    <input type="text" class="form-control" id="dimensiones" placeholder="Ejemplo: 100m²" required>
+                                </div>
+
+                                <!-- Ambientes -->
+                                <div class="mb-3">
+                                    <label class="form-label">Ambientes</label>
+                                    <div class="row g-3">
+                                        {% for ambiente in ambientes %}
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="ambiente{{ ambiente.id_ambiente }}" 
+                                                       name="ambientes[]" 
+                                                       value="{{ ambiente.id_ambiente }}">
+                                                <label class="form-check-label" for="ambiente{{ ambiente.id_ambiente }}">
+                                                    {{ ambiente.nombre }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Servicios -->
+                                <div class="mb-3">
+                                    <label class="form-label">Servicios Incluidos</label>
+                                    <div class="row g-3">
+                                        {% for servicio in servicios %}
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="servicio{{ servicio.id_servicio }}" 
+                                                       name="servicios[]" 
+                                                       value="{{ servicio.id_servicio }}">
+                                                <label class="form-check-label" for="servicio{{ servicio.id_servicio }}">
+                                                    {{ servicio.nombre }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
                                     </div>
                                 </div>
                             </div>
@@ -107,7 +168,7 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label for="tipoVehiculo" class="form-label">Tipo de Vehículo</label>
-                                    <select class="form-select" id="tipoVehiculo" name="tipo_vehiculo">
+                                    <select class="form-select" id="tipoVehiculo" name="tipo_vehiculo" required>
                                         <option value="">Seleccione...</option>
                                         <option value="1">Auto</option>
                                         <option value="2">Camioneta</option>
@@ -117,12 +178,65 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="marca" class="form-label">Marca</label>
-                                        <input type="text" class="form-control" id="marca">
+                                        <input type="text" class="form-control" id="marca" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="modelo" class="form-label">Modelo</label>
-                                        <input type="text" class="form-control" id="modelo">
+                                        <input type="text" class="form-control" id="modelo" required>
                                     </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="anio" class="form-label">Año</label>
+                                        <input type="date" class="form-control" id="anio" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="placa" class="form-label">Placa</label>
+                                        <input type="text" class="form-control" id="placa" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="color" class="form-label">Color</label>
+                                        <input type="text" class="form-control" id="color" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="transmision" class="form-label">Transmisión</label>
+                                        <select class="form-select" id="transmision" required>
+                                            <option value="">Seleccione...</option>
+                                            <option value="Manual">Manual</option>
+                                            <option value="Automática">Automática</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="cantCombustible" class="form-label">Capacidad de Combustible</label>
+                                        <input type="text" class="form-control" id="cantCombustible" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="tipoCombustible" class="form-label">Tipo de Combustible</label>
+                                        <select class="form-select" id="tipoCombustible" required>
+                                            <option value="">Seleccione...</option>
+                                            <option value="Gasolina">Gasolina</option>
+                                            <option value="Diesel">Diesel</option>
+                                            <option value="GLP">GLP</option>
+                                            <option value="GNV">GNV</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="kilometraje" class="form-label">Kilometraje</label>
+                                        <input type="text" class="form-control" id="kilometraje" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="seguro" class="form-label">Seguro</label>
+                                    <select class="form-select" id="seguro" required>
+                                        <option value="">Seleccione un seguro...</option>
+                                        <!-- Aquí deberías cargar dinámicamente los seguros desde la base de datos -->
+                                        <option value="1">Seguro Básico</option>
+                                        <option value="2">Seguro Completo</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -144,6 +258,16 @@
                                     <label for="direccion" class="form-label">Dirección</label>
                                     <input type="text" class="form-control" id="direccion" required>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="latitud" class="form-label">Latitud</label>
+                                        <input type="number" step="any" class="form-control" id="latitud" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="longitud" class="form-label">Longitud</label>
+                                        <input type="number" step="any" class="form-control" id="longitud" required>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -155,7 +279,7 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label for="imagenes" class="form-label">Subir imágenes</label>
-                                    <input type="file" class="form-control" id="imagenes" multiple accept="image/*">
+                                    <input type="file" class="form-control" id="imagenes" multiple accept="image/*" required>
                                     <div id="previewImagenes" class="mt-3 row g-2"></div>
                                 </div>
                             </div>

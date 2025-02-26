@@ -8,6 +8,11 @@ import time
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 import json
+import os
+from werkzeug.utils import secure_filename
+from flask import current_app
+from ..database import Database
+from werkzeug.exceptions import BadRequest, Unauthorized
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -18,89 +23,99 @@ def get_db_connection():
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        if current_user.tipo_usuario_id == 2:  # Propietario
-            return redirect(url_for('auth.dashboard_propietario'))
-        elif current_user.tipo_usuario_id == 3:  # Administrador
-            return redirect(url_for('auth.dashboard'))
-        else:  # Cliente u otros
-            return redirect(url_for('main.index'))
+        return redirect_by_role(current_user.tipo_usuario_id)
     
     if request.method == 'POST':
-        if request.is_json:
-            data = request.get_json()
+        try:
+            data = request.get_json() if request.is_json else request.form
             correo = data.get('correo')
             contrasenia = data.get('contrasenia')
-        else:
-            correo = request.form.get('correo')
-            contrasenia = request.form.get('contrasenia')
-
-        try:
+            
+            if not correo or not contrasenia:
+                return jsonify({
+                    'success': False,
+                    'message': 'Correo y contraseña son requeridos'
+                })
+            
             conn = get_db_connection()
             cursor = conn.cursor()
-
+            
+            # Modificar la consulta para obtener todos los campos necesarios
             cursor.execute("""
-                SELECT u.*, t.id_tipo_u, t.nombre as tipo_usuario 
-                FROM Usuario u 
-                JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u 
+                SELECT 
+                    u.id_usuario,
+                    u.nombre,
+                    u.correo,
+                    u.contrasenia,
+                    u.imagen_url,
+                    t.id_tipo_u,
+                    t.nombre as tipo_usuario
+                FROM Usuario u
+                JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
                 WHERE u.correo = ?
             """, (correo,))
             
             user = cursor.fetchone()
             
-            if user and check_password_hash(user.contrasenia, contrasenia):
-                user_obj = User(
-                    id_usuario=user.id_usuario,
-                    nombre=user.nombre,
-                    correo=user.correo,
-                    tipo_usuario=user.tipo_usuario,
-                    tipo_usuario_id=user.id_tipo_u,
-                    imagen_url=getattr(user, 'imagen_url', None)
-                )
-                
-                login_user(user_obj)
-
-                if request.is_json:
-                    if user.id_tipo_u == 2:  # Propietario
-                        return jsonify({'success': True, 'redirect': url_for('auth.dashboard_propietario')})
-                    elif user.id_tipo_u == 3:  # Administrador
-                        return jsonify({'success': True, 'redirect': url_for('auth.dashboard')})
-                    else:  # Cliente
-                        return jsonify({'success': True, 'redirect': url_for('main.index')})
-                else:
-                    if user.id_tipo_u == 2:
-                        return redirect(url_for('auth.dashboard_propietario'))
-                    elif user.id_tipo_u == 3:
-                        return redirect(url_for('auth.dashboard'))
-                    else:
-                        return redirect(url_for('main.index'))
-            
-            if request.is_json:
+            if not user:
                 return jsonify({
                     'success': False,
-                    'message': 'Correo o contraseña incorrectos'
+                    'message': 'Usuario no encontrado'
                 })
-            else:
-                flash('Correo o contraseña incorrectos', 'error')
-                return redirect(url_for('auth.login'))
 
+            # Verificar la contraseña
+            if not check_password_hash(user.contrasenia, contrasenia):
+                return jsonify({
+                    'success': False,
+                    'message': 'Contraseña incorrecta'
+                })
+            
+            # Crear objeto de usuario y hacer login
+            user_obj = User(
+                id_usuario=user.id_usuario,
+                nombre=user.nombre,
+                correo=user.correo,
+                tipo_usuario=user.tipo_usuario,
+                tipo_usuario_id=user.id_tipo_u,
+                imagen_url=user.imagen_url
+            )
+            
+            login_user(user_obj)
+            
+            # Determinar la redirección basada en el tipo de usuario
+            redirect_url = url_for('auth.dashboard_propietario' if user.id_tipo_u == 2 
+                                 else 'auth.dashboard' if user.id_tipo_u == 3 
+                                 else 'main.index')
+            
+            return jsonify({
+                'success': True,
+                'redirect': redirect_url
+            })
+            
         except Exception as e:
             print(f"Error en login: {str(e)}")
-            if request.is_json:
-                return jsonify({
-                    'success': False,
-                    'message': f'Error al iniciar sesión: {str(e)}'
-                })
-            else:
-                flash(f'Error al iniciar sesión: {str(e)}', 'error')
-                return redirect(url_for('auth.login'))
-        
+            return jsonify({
+                'success': False,
+                'message': 'Error al procesar el login'
+            })
+            
         finally:
             if 'cursor' in locals():
                 cursor.close()
             if 'conn' in locals():
                 conn.close()
-
+    
+    # Si es GET, mostrar el formulario de login
     return render_template('auth/login.html')
+
+# Función auxiliar para redirigir según el rol
+def redirect_by_role(tipo_usuario_id):
+    if tipo_usuario_id == 2:  # Propietario
+        return redirect(url_for('auth.dashboard_propietario'))
+    elif tipo_usuario_id == 3:  # Administrador
+        return redirect(url_for('auth.dashboard'))
+    else:  # Cliente
+        return redirect(url_for('main.index'))
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -169,165 +184,101 @@ def register():
 @auth_bp.route('/dashboard_propietario')
 @login_required
 def dashboard_propietario():
-    if not current_user.is_authenticated:
-        return redirect(url_for('auth.login'))
-    
-    if current_user.tipo_usuario_id != 2:  # 2 = Propietario
+    if not current_user.is_propietario:
         flash('No tienes permiso para acceder a esta página', 'error')
         return redirect(url_for('auth.login'))
-    
+        
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Obtener estadísticas básicas
-        stats = {
-            'total_publicaciones': 0,
-            'total_interesados': 0,
-            'publicaciones_activas': 0,
-            'publicaciones_inactivas': 0
-        }
-        
-        # Contar publicaciones y estados
+        # Obtener estadísticas
         cursor.execute("""
             SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN estado = 'Activo' THEN 1 ELSE 0 END) as activas,
-                SUM(CASE WHEN estado = 'Inactivo' THEN 1 ELSE 0 END) as inactivas
+                COUNT(id_publicacion) as total_publicaciones,
+                SUM(CASE WHEN estado = 'Activo' THEN 1 ELSE 0 END) as publicaciones_activas,
+                SUM(CASE WHEN estado = 'Inactivo' THEN 1 ELSE 0 END) as publicaciones_inactivas
             FROM Publicacion 
             WHERE Usuario_id_usuario = ?
         """, (current_user.id_usuario,))
         
-        row = cursor.fetchone()
-        if row:
-            stats['total_publicaciones'] = row[0] or 0
-            stats['publicaciones_activas'] = row[1] or 0
-            stats['publicaciones_inactivas'] = row[2] or 0
+        stats = cursor.fetchone()
         
-        # Contar total de interesados
+        # Obtener publicaciones recientes
         cursor.execute("""
-            SELECT COUNT(DISTINCT cp.id_clientes)
-            FROM Publicacion p
-            LEFT JOIN Clientes_Potenciales cp ON p.id_publicacion = cp.Publicacion_id_publicacion
-            WHERE p.Usuario_id_usuario = ?
+            SELECT TOP 5 * FROM Publicacion 
+            WHERE Usuario_id_usuario = ? 
+            ORDER BY fecha_publicacion DESC
         """, (current_user.id_usuario,))
         
-        stats['total_interesados'] = cursor.fetchone()[0] or 0
-        
-        # Consulta para obtener publicaciones activas
-        cursor.execute("""
-            SELECT 
-                p.id_publicacion,
-                p.titulo,
-                p.descripcion,
-                p.precio_unitario,
-                p.fecha_publicacion,
-                p.estado,
-                p.distrito,
-                p.direccion,
-                p.imagenes,
-                CASE 
-                    WHEN p.Vivienda_id_vivienda IS NOT NULL THEN 'Vivienda'
-                    WHEN p.Vehiculo_id_vehiculo IS NOT NULL THEN 'Vehículo'
-                END as tipo_publicacion,
-                COUNT(cp.id_clientes) as total_interesados,
-                COALESCE(tv.nombre, tve.nombre) as tipo_especifico
-            FROM Publicacion p
-            LEFT JOIN Vivienda v ON p.Vivienda_id_vivienda = v.id_vivienda
-            LEFT JOIN Vehiculo vh ON p.Vehiculo_id_vehiculo = vh.id_vehiculo
-            LEFT JOIN Tipo_vivienda tv ON v.Tipo_vivienda_id = tv.id_tipo_v
-            LEFT JOIN Tipo_vehiculo tve ON vh.Tipo_vechiculo_id = tve.id_tipo_ve
-            LEFT JOIN Clientes_Potenciales cp ON p.id_publicacion = cp.Publicacion_id_publicacion
-            WHERE p.Usuario_id_usuario = ? AND p.estado = 'Activo'
-            GROUP BY 
-                p.id_publicacion, p.titulo, p.descripcion, 
-                p.precio_unitario, p.fecha_publicacion, p.estado,
-                p.distrito, p.direccion, p.imagenes,
-                p.Vivienda_id_vivienda, p.Vehiculo_id_vehiculo,
-                tv.nombre, tve.nombre
-            ORDER BY p.fecha_publicacion DESC
-        """, (current_user.id_usuario,))
-        
-        publicaciones = []
-        for row in cursor.fetchall():
-            publicacion = {
-                'id_publicacion': row.id_publicacion,
-                'titulo': row.titulo,
-                'descripcion': row.descripcion,
-                'precio_unitario': float(row.precio_unitario),
-                'fecha_publicacion': row.fecha_publicacion.strftime('%Y-%m-%d %H:%M:%S'),
-                'estado': row.estado,
-                'distrito': row.distrito,
-                'direccion': row.direccion,
-                'imagenes': row.imagenes.split(',') if row.imagenes else [],
-                'tipo_publicacion': row.tipo_publicacion,
-                'total_interesados': row.total_interesados,
-                'tipo_especifico': row.tipo_especifico
-            }
-            publicaciones.append(publicacion)
-        
-        print(f"Publicaciones encontradas: {len(publicaciones)}")
+        publicaciones_recientes = cursor.fetchall()
         
         return render_template('auth/dashboard_propietario.html',
-                             publicaciones=publicaciones,
                              stats=stats,
-                             current_user=current_user)
-    
+                             publicaciones_recientes=publicaciones_recientes)
+                             
     except Exception as e:
         print(f"Error en dashboard_propietario: {str(e)}")
         flash('Error al cargar el dashboard', 'error')
         return redirect(url_for('auth.login'))
-    
+        
     finally:
-        if cursor:
+        if 'cursor' in locals():
             cursor.close()
-        if conn:
+        if 'conn' in locals():
             conn.close()
 
 @auth_bp.route('/dashboard')
 @login_required
 def dashboard():
-    if current_user.tipo_usuario != 'Administrador':
+    if not current_user.is_admin:
         flash('No tienes permiso para acceder a esta página', 'error')
-        return redirect(url_for('auth.login'))  # Cambiado de 'main.index' a 'auth.login'
-    
+        return redirect(url_for('auth.login'))
+        
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Obtener estadísticas para el dashboard
+        # Obtener estadísticas generales
         cursor.execute("""
             SELECT 
                 COUNT(*) as total_usuarios,
                 SUM(CASE WHEN t.nombre = 'Cliente' THEN 1 ELSE 0 END) as total_clientes,
-                SUM(CASE WHEN t.nombre = 'Propietario' THEN 1 ELSE 0 END) as total_propietarios
+                SUM(CASE WHEN t.nombre = 'Propietario' THEN 1 ELSE 0 END) as total_propietarios,
+                SUM(CASE WHEN t.nombre = 'Administrador' THEN 1 ELSE 0 END) as total_admins
             FROM Usuario u
             JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
         """)
         
         stats = cursor.fetchone()
         
-        # Obtener lista de usuarios
+        # Obtener usuarios con más detalles
         cursor.execute("""
-            SELECT u.*, t.nombre as tipo_usuario
+            SELECT 
+                u.*, 
+                t.nombre as tipo_usuario,
+                (SELECT COUNT(*) FROM Publicacion p WHERE p.Usuario_id_usuario = u.id_usuario) as total_publicaciones
             FROM Usuario u
             JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
+            ORDER BY u.fecha_ingreso DESC
         """)
         
         usuarios = cursor.fetchall()
         
-        return render_template('auth/dashboard.html', 
+        return render_template('auth/dashboard.html',
                              stats=stats,
                              usuarios=usuarios)
-    
+                             
     except Exception as e:
-        print(f"Error en dashboard: {str(e)}")
+        print(f"Error en dashboard admin: {str(e)}")
         flash('Error al cargar el dashboard', 'error')
-        return redirect(url_for('auth.login'))  # Cambiado de 'main.index' a 'auth.login'
-    
+        return redirect(url_for('auth.login'))
+        
     finally:
-        cursor.close()
-        conn.close()
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
 
 # Rutas para gestión de usuarios
 @auth_bp.route('/usuario/editar/<int:id>', methods=['POST'])
@@ -617,129 +568,203 @@ def eliminar_publicacion(id):
 @login_required
 def crear_publicacion():
     if request.method == 'GET':
-        return render_template('auth/crear_publicacion.html')
-    
-    try:
-        print("=== Iniciando creación de publicación ===")
-        print(f"Datos del formulario: {request.form}")
-        print(f"Archivos recibidos: {request.files}")
-        
+        # Obtener tipos de vivienda para el formulario
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Obtener datos del formulario
+        cursor.execute("SELECT id_tipo_v, nombre, capacidad, pisos FROM Tipo_vivienda")
+        tipos_vivienda = cursor.fetchall()
+        
+        cursor.execute("SELECT id_ambiente, nombre FROM Ambiente")
+        ambientes = cursor.fetchall()
+        
+        cursor.execute("SELECT id_servicio, nombre FROM Servicio")
+        servicios = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('auth/crear_publicacion.html',
+                             tipos_vivienda=tipos_vivienda,
+                             ambientes=ambientes,
+                             servicios=servicios,
+                             datetime=datetime)
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Validar y obtener datos básicos del formulario
         tipo_publicacion = request.form.get('tipo_publicacion')
         titulo = request.form.get('titulo')
+        if not titulo:
+            return jsonify({'success': False, 'error': 'El título es requerido'})
+            
         descripcion = request.form.get('descripcion')
-        precio = float(request.form.get('precio'))
+        if not descripcion:
+            return jsonify({'success': False, 'error': 'La descripción es requerida'})
+            
+        precio = request.form.get('precio')
+        if not precio:
+            return jsonify({'success': False, 'error': 'El precio es requerido'})
+            
         distrito = request.form.get('distrito')
+        if not distrito:
+            return jsonify({'success': False, 'error': 'El distrito es requerido'})
+            
         direccion = request.form.get('direccion')
-        
-        print(f"""
-        Datos recibidos:
-        - Tipo: {tipo_publicacion}
-        - Título: {titulo}
-        - Descripción: {descripcion}
-        - Precio: {precio}
-        - Distrito: {distrito}
-        - Dirección: {direccion}
-        """)
-        
+        if not direccion:
+            return jsonify({'success': False, 'error': 'La dirección es requerida'})
+            
+        latitud = request.form.get('latitud')
+        longitud = request.form.get('longitud')
+        if not latitud or not longitud:
+            return jsonify({'success': False, 'error': 'La ubicación es requerida'})
+
         # Procesar imágenes
         imagenes = request.files.getlist('imagenes[]')
         imagen_urls = []
-        print(f"Imágenes recibidas: {len(imagenes)}")
-        
+        for imagen in imagenes:
+            if imagen and allowed_file(imagen.filename):
+                filename = secure_filename(imagen.filename)
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                imagen.save(filepath)
+                imagen_urls.append(filepath)
+
         if tipo_publicacion == 'vivienda':
-            tipo_vivienda = request.form.get('tipo_vivienda')
-            habitaciones = request.form.get('habitaciones')
-            banos = request.form.get('banos')
-            
-            print(f"""
-            Datos de vivienda:
-            - Tipo vivienda: {tipo_vivienda}
-            - Habitaciones: {habitaciones}
-            - Baños: {banos}
-            """)
-            
             try:
+                # Validar datos específicos de vivienda
+                tipo_vivienda = request.form.get('tipo_vivienda')
+                if not tipo_vivienda:
+                    return jsonify({'success': False, 'error': 'El tipo de vivienda es requerido'})
+
+                fecha_construccion = request.form.get('fecha_construccion')
+                if not fecha_construccion:
+                    return jsonify({'success': False, 'error': 'La fecha de construcción es requerida'})
+
+                antiguedad = request.form.get('antiguedad')
+                if not antiguedad:
+                    return jsonify({'success': False, 'error': 'La antigüedad es requerida'})
+
+                dimensiones = request.form.get('dimensiones')
+                if not dimensiones:
+                    return jsonify({'success': False, 'error': 'Las dimensiones son requeridas'})
+
+                # Insertar vivienda con formato de fecha corregido
                 cursor.execute("""
-                    INSERT INTO Vivienda (Tipo_vivienda_id, habitaciones, banos)
-                    VALUES (?, ?, ?)
-                """, (tipo_vivienda, habitaciones, banos))
+                    INSERT INTO Vivienda (
+                        fecha_construccion, 
+                        dimensiones, 
+                        antiguedad, 
+                        Tipo_vivienda_id
+                    ) VALUES (?, ?, ?, ?)
+                """, (
+                    datetime.strptime(fecha_construccion, '%Y-%m-%d').strftime('%Y-%m-%d'),
+                    dimensiones,
+                    datetime.strptime(antiguedad, '%Y-%m-%d').strftime('%Y-%m-%d'),
+                    int(tipo_vivienda)
+                ))
                 conn.commit()
                 
-                cursor.execute("SELECT @@IDENTITY")
-                vivienda_id = cursor.fetchone()[0]
-                print(f"Vivienda creada con ID: {vivienda_id}")
+                # Obtener el ID de la vivienda recién creada
+                cursor.execute("SELECT SCOPE_IDENTITY()")
+                vivienda_id = int(cursor.fetchone()[0])  # Asegurarnos que sea un entero
                 
-            except Exception as e:
-                print(f"Error al insertar vivienda: {str(e)}")
-                raise
+                # Insertar ambientes seleccionados
+                ambientes = request.form.getlist('ambientes[]')
+                if ambientes:  # Solo si hay ambientes seleccionados
+                    for ambiente_id in ambientes:
+                        cursor.execute("""
+                            INSERT INTO Ambiente_Vivienda (Ambiente_id, Vivienda_id)
+                            VALUES (?, ?)
+                        """, (int(ambiente_id), vivienda_id))
+                        conn.commit()  # Commit después de cada inserción
                 
-        else:
-            tipo_vehiculo = request.form.get('tipo_vehiculo')
-            marca = request.form.get('marca')
-            modelo = request.form.get('modelo')
-            
-            print(f"""
-            Datos de vehículo:
-            - Tipo vehículo: {tipo_vehiculo}
-            - Marca: {marca}
-            - Modelo: {modelo}
-            """)
-            
-            try:
+                # Insertar servicios seleccionados
+                servicios = request.form.getlist('servicios[]')
+                if servicios:  # Solo si hay servicios seleccionados
+                    for servicio_id in servicios:
+                        cursor.execute("""
+                            INSERT INTO Servicio_Vivienda (Servicio_id, Vivienda_id)
+                            VALUES (?, ?)
+                        """, (int(servicio_id), vivienda_id))
+                        conn.commit()  # Commit después de cada inserción
+                
+                # Insertar publicación con vivienda
                 cursor.execute("""
-                    INSERT INTO Vehiculo (Tipo_vechiculo_id, marca, modelo)
-                    VALUES (?, ?, ?)
-                """, (tipo_vehiculo, marca, modelo))
+                    INSERT INTO Publicacion (
+                        titulo, descripcion, precio_unitario, distrito, direccion,
+                        latitud, longitud, estado, imagenes, Usuario_id_usuario,
+                        Vivienda_id_vivienda, fecha_publicacion, Vehiculo_id_vehiculo
+                    ) VALUES (
+                        ?, ?, ?, ?, ?,
+                        ?, ?, 'Activo', ?, ?,
+                        ?, GETDATE(), NULL
+                    )
+                """, (
+                    titulo, descripcion, float(precio), distrito, direccion,
+                    float(latitud), float(longitud), ','.join(imagen_urls), current_user.id_usuario,
+                    vivienda_id
+                ))
                 conn.commit()
                 
-                cursor.execute("SELECT @@IDENTITY")
-                vehiculo_id = cursor.fetchone()[0]
-                print(f"Vehículo creado con ID: {vehiculo_id}")
+                return jsonify({'success': True})
                 
             except Exception as e:
-                print(f"Error al insertar vehículo: {str(e)}")
-                raise
+                print(f"Error al crear publicación: {str(e)}")
+                conn.rollback()
+                return jsonify({'success': False, 'error': str(e)})
         
-        # Insertar publicación
-        try:
-            if tipo_publicacion == 'vivienda':
-                cursor.execute("""
-                    INSERT INTO Publicacion (
-                        titulo, descripcion, precio_unitario, fecha_publicacion,
-                        estado, distrito, direccion, imagenes, Usuario_id_usuario,
-                        Vivienda_id_vivienda
-                    ) VALUES (?, ?, ?, GETDATE(), 'Activo', ?, ?, ?, ?, ?)
-                """, (
-                    titulo, descripcion, precio, distrito, direccion,
-                    ','.join(imagen_urls), current_user.id_usuario, vivienda_id
-                ))
-            else:
-                cursor.execute("""
-                    INSERT INTO Publicacion (
-                        titulo, descripcion, precio_unitario, fecha_publicacion,
-                        estado, distrito, direccion, imagenes, Usuario_id_usuario,
-                        Vehiculo_id_vehiculo
-                    ) VALUES (?, ?, ?, GETDATE(), 'Activo', ?, ?, ?, ?, ?)
-                """, (
-                    titulo, descripcion, precio, distrito, direccion,
-                    ','.join(imagen_urls), current_user.id_usuario, vehiculo_id
-                ))
-            
+        else:  # Tipo vehículo
+            # Insertar vehículo
+            cursor.execute("""
+                INSERT INTO Vehiculo (
+                    marca, modelo, anio, placa, color, transmision,
+                    cant_combustible, tipo_combustible, kilometraje,
+                    Tipo_vechiculo_id, Seguro_id_seguro
+                ) VALUES (?, ?, CONVERT(DATE, ?), ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                request.form.get('marca'),
+                request.form.get('modelo'),
+                request.form.get('anio'),
+                request.form.get('placa'),
+                request.form.get('color'),
+                request.form.get('transmision'),
+                request.form.get('cantCombustible'),
+                request.form.get('tipoCombustible'),
+                request.form.get('kilometraje'),
+                int(request.form.get('tipo_vehiculo')),
+                int(request.form.get('seguro'))
+            ))
             conn.commit()
-            print("Publicación creada exitosamente")
-            return jsonify({'success': True})
             
-        except Exception as e:
-            print(f"Error al insertar publicación: {str(e)}")
-            raise
+            # Obtener el ID del vehículo recién creado
+            cursor.execute("SELECT SCOPE_IDENTITY()")
+            vehiculo_id = cursor.fetchone()[0]
+            
+            # Insertar publicación con vehículo
+            cursor.execute("""
+                INSERT INTO Publicacion (
+                    titulo, descripcion, precio_unitario, distrito, direccion,
+                    latitud, longitud, estado, imagenes, Usuario_id_usuario,
+                    Vehiculo_id_vehiculo, fecha_publicacion, Vivienda_id_vivienda
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, 'Activo', ?, ?,
+                    ?, GETDATE(), NULL
+                )
+            """, (
+                titulo, descripcion, float(precio), distrito, direccion,
+                float(latitud), float(longitud), ','.join(imagen_urls), current_user.id_usuario,
+                vehiculo_id
+            ))
+            
+        conn.commit()
+        return jsonify({'success': True})
         
     except Exception as e:
+        print(f"Error al crear publicación: {str(e)}")
         conn.rollback()
-        print(f"Error general al crear publicación: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
         
     finally:
@@ -747,3 +772,185 @@ def crear_publicacion():
             cursor.close()
         if conn:
             conn.close()
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@auth_bp.route('/mis_publicaciones')
+@login_required
+def mis_publicaciones():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Obtener todas las publicaciones del usuario actual
+        cursor.execute("""
+            SELECT 
+                p.id_publicacion,
+                p.titulo,
+                p.descripcion,
+                p.precio_unitario,
+                p.distrito,
+                p.direccion,
+                p.estado,
+                p.imagenes,
+                p.fecha_publicacion,
+                CASE 
+                    WHEN v.id_vivienda IS NOT NULL THEN 'Vivienda'
+                    ELSE 'Vehículo'
+                END as tipo_publicacion,
+                v.dimensiones,
+                tv.nombre as tipo_vivienda,
+                COUNT(cp.id_clientes) as total_interesados
+            FROM Publicacion p
+            LEFT JOIN Vivienda v ON p.Vivienda_id_vivienda = v.id_vivienda
+            LEFT JOIN Tipo_vivienda tv ON v.Tipo_vivienda_id = tv.id_tipo_v
+            LEFT JOIN Clientes_Potenciales cp ON p.id_publicacion = cp.Publicacion_id_publicacion
+            WHERE p.Usuario_id_usuario = ?
+            GROUP BY 
+                p.id_publicacion, p.titulo, p.descripcion, p.precio_unitario,
+                p.distrito, p.direccion, p.estado, p.imagenes, p.fecha_publicacion,
+                v.id_vivienda, v.dimensiones, tv.nombre
+            ORDER BY p.fecha_publicacion DESC
+        """, (current_user.id_usuario,))
+        
+        publicaciones = []
+        for row in cursor.fetchall():
+            publicacion = {
+                'id': row.id_publicacion,
+                'titulo': row.titulo,
+                'descripcion': row.descripcion,
+                'precio': float(row.precio_unitario),
+                'distrito': row.distrito,
+                'direccion': row.direccion,
+                'estado': row.estado,
+                'imagenes': row.imagenes.split(',') if row.imagenes else [],
+                'fecha': row.fecha_publicacion.strftime('%d/%m/%Y'),
+                'tipo': row.tipo_publicacion,
+                'dimensiones': row.dimensiones,
+                'tipo_vivienda': row.tipo_vivienda,
+                'total_interesados': row.total_interesados
+            }
+            publicaciones.append(publicacion)
+            
+        return jsonify({
+            'success': True,
+            'publicaciones': publicaciones
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener publicaciones: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+        
+    finally:
+        cursor.close()
+        conn.close()
+
+@auth_bp.route('/config-account', methods=['GET', 'POST'])
+@login_required
+def config_account():
+    print("Accediendo a config-account")
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Obtener datos del usuario actual
+        cursor.execute("""
+            SELECT 
+                u.id_usuario,
+                u.nombre,
+                u.correo,
+                u.telefono,
+                u.doc_identidad,
+                u.direccion,
+                u.imagen_url,
+                tu.nombre as tipo_usuario
+            FROM Usuario u
+            JOIN Tipo_usuario tu ON u.Tipo_usuario_id = tu.id_tipo_usuario
+            WHERE u.id_usuario = ?
+        """, (current_user.id_usuario,))
+        
+        user_data = cursor.fetchone()
+        
+        if request.method == 'POST':
+            # Lógica para actualizar datos
+            nombre = request.form.get('nombre')
+            telefono = request.form.get('telefono')
+            direccion = request.form.get('direccion')
+            doc_identidad = request.form.get('doc_identidad')
+            
+            # Actualizar datos
+            cursor.execute("""
+                UPDATE Usuario 
+                SET nombre = ?, telefono = ?, direccion = ?, doc_identidad = ?
+                WHERE id_usuario = ?
+            """, (nombre, telefono, direccion, doc_identidad, current_user.id_usuario))
+            
+            conn.commit()
+            flash('Datos actualizados correctamente', 'success')
+            return redirect(url_for('auth.config_account'))
+            
+        return render_template('auth/config-account.html', user=user_data)
+        
+    except Exception as e:
+        print(f"Error en config_account: {str(e)}")
+        flash('Error al procesar la solicitud', 'error')
+        return redirect(url_for('auth.dashboard_propietario'))
+        
+    finally:
+        cursor.close()
+        conn.close()
+
+@auth_bp.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    try:
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not current_password or not new_password or not confirm_password:
+            flash('Todos los campos son requeridos', 'error')
+            return redirect(url_for('auth.config_account'))
+            
+        if new_password != confirm_password:
+            flash('Las contraseñas nuevas no coinciden', 'error')
+            return redirect(url_for('auth.config_account'))
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Verificar contraseña actual
+        cursor.execute("SELECT contrasenia FROM Usuario WHERE id_usuario = ?", 
+                      (current_user.id_usuario,))
+        stored_password = cursor.fetchone().contrasenia
+        
+        if not check_password_hash(stored_password, current_password):
+            flash('La contraseña actual es incorrecta', 'error')
+            return redirect(url_for('auth.config_account'))
+            
+        # Actualizar contraseña
+        hashed_password = generate_password_hash(new_password)
+        cursor.execute("""
+            UPDATE Usuario 
+            SET contrasenia = ?
+            WHERE id_usuario = ?
+        """, (hashed_password, current_user.id_usuario))
+        
+        conn.commit()
+        flash('Contraseña actualizada correctamente', 'success')
+        
+    except Exception as e:
+        print(f"Error al cambiar contraseña: {str(e)}")
+        flash('Error al cambiar la contraseña', 'error')
+        
+    finally:
+        cursor.close()
+        conn.close()
+        
+    return redirect(url_for('auth.config_account'))

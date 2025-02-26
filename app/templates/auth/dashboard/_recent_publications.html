@@ -1,0 +1,37 @@
+<div class="card section-gap">
+    <div class="card-body">
+        <h5 class="card-title mb-4">Publicaciones Recientes</h5>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Interesados</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pub in publicaciones_recientes %}
+                    <tr>
+                        <td>{{ pub.titulo }}</td>
+                        <td>{{ pub.fecha_publicacion.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if pub.estado == 'Activo' else 'secondary' }}">
+                                {{ pub.estado }}
+                            </span>
+                        </td>
+                        <td>{{ pub.total_interesados or 0 }}</td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div> 

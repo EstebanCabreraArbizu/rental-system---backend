@@ -1,0 +1,44 @@
+<div class="card section-gap">
+    <div class="card-body">
+        <h5 class="card-title mb-4">Usuarios Recientes</h5>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Fecha Registro</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.nombre }}</td>
+                        <td>{{ usuario.correo }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if usuario.tipo_usuario == 'Propietario' else 'info' }}">
+                                {{ usuario.tipo_usuario }}
+                            </span>
+                        </td>
+                        <td>{{ usuario.fecha_ingreso.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <span class="badge bg-success">Activo</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="verDetallesUsuario({{ usuario.id_usuario }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="editarUsuario({{ usuario.id_usuario }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div> 

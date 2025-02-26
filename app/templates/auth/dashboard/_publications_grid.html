@@ -1,0 +1,15 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Mis Publicaciones</h2>
+    <div>
+        <button class="btn btn-outline-primary me-2" id="filterBtn">
+            <i class="fas fa-filter me-2"></i>Filtrar
+        </button>
+        <a href="{{ url_for('auth.crear_publicacion') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nueva Publicación
+        </a>
+    </div>
+</div>
+
+<div id="publicacionesGrid" class="row g-4">
+    <!-- Las publicaciones se cargarán dinámicamente aquí -->
+</div> 

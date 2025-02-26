@@ -216,19 +216,16 @@
   document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const formData = {
-        correo: document.getElementById('correo').value,
-        contrasenia: document.getElementById('contrasenia').value
-    };
-
     try {
         const response = await fetch('/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify({
+                correo: document.getElementById('correo').value,
+                contrasenia: document.getElementById('contrasenia').value
+            })
         });
         
         const data = await response.json();
@@ -236,6 +233,7 @@
         if (data.success) {
             window.location.href = data.redirect;
         } else {
+            // Mostrar error en un elemento específico
             alert(data.message || 'Error al iniciar sesión');
         }
     } catch (error) {

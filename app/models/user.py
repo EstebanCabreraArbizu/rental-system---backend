@@ -6,13 +6,13 @@ from ..config import Config
 from app.database import get_db_connection
 
 class User(UserMixin):
-    def __init__(self, id_usuario, nombre, correo, tipo_usuario, tipo_usuario_id=None, imagen_url=None):
+    def __init__(self, id_usuario, nombre, correo, tipo_usuario, tipo_usuario_id, imagen_url=None):
         self.id_usuario = id_usuario
         self.nombre = nombre
         self.correo = correo
         self.tipo_usuario = tipo_usuario
         self.tipo_usuario_id = tipo_usuario_id
-        self.imagen_url = imagen_url or 'https://via.placeholder.com/150'
+        self.imagen_url = imagen_url
 
     def get_id(self):
         return str(self.id_usuario)
@@ -28,6 +28,18 @@ class User(UserMixin):
     @property
     def is_anonymous(self):
         return False
+
+    @property
+    def is_admin(self):
+        return self.tipo_usuario_id == 3
+
+    @property
+    def is_propietario(self):
+        return self.tipo_usuario_id == 2
+
+    @property
+    def is_cliente(self):
+        return self.tipo_usuario_id == 1
 
     @staticmethod
     def get_by_id(user_id):
@@ -65,18 +77,6 @@ class User(UserMixin):
             cursor.close()
             conn.close()
 
-    @property
-    def is_propietario(self):
-        return self.tipo_usuario_id == 2
-
-    @property
-    def is_cliente(self):
-        return self.tipo_usuario_id == 1
-
-    @property
-    def is_admin(self):
-        return self.tipo_usuario_id == 3
-
     @staticmethod
     def get_by_email(email):
         try:
@@ -103,6 +103,18 @@ class User(UserMixin):
         finally:
             cursor.close()
             conn.close()
+
+    @staticmethod
+    def from_db(user_data):
+        """Crea una instancia de User desde los datos de la base de datos"""
+        return User(
+            id_usuario=user_data.id_usuario,
+            nombre=user_data.nombre,
+            correo=user_data.correo,
+            tipo_usuario=user_data.tipo_usuario,
+            tipo_usuario_id=user_data.id_tipo_u,
+            imagen_url=getattr(user_data, 'imagen_url', None)
+        )
 
 @login_manager.user_loader
 def load_user(user_id):

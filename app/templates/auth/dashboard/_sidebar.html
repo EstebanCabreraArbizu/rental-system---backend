@@ -1,0 +1,31 @@
+<div class="sidebar fixed-top" style="width: var(--sidebar-width); height: 100vh; background-color: var(--primary-color);">
+    <div class="p-3">
+        <div class="text-center mb-4">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="RentAll" class="mb-2" style="max-width: 120px;">
+            <h5 class="text-white">Panel de Control</h5>
+        </div>
+
+        <ul class="nav flex-column">
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="#dashboard">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="#publicaciones">
+                    <i class="fas fa-list me-2"></i>Mis Publicaciones
+                </a>
+            </li>
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="{{ url_for('auth.crear_publicacion') }}">
+                    <i class="fas fa-plus me-2"></i>Nueva Publicación
+                </a>
+            </li>
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="{{ url_for('auth.config_account') }}">
+                    <i class="fas fa-cog me-2"></i>Configuraciones
+                </a>
+            </li>
+        </ul>
+    </div>
+</div> 

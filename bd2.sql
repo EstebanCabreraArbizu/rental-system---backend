@@ -191,5 +191,28 @@ CREATE TABLE Notificacion (
 -- Insertar tipos de usuario básicos
 INSERT INTO Tipo_usuario (nombre) VALUES ('Cliente'), ('Propietario'), ('Administrador');
 
+-- Insertar tipos de vivienda básicos
+INSERT INTO Tipo_vivienda (nombre, capacidad, pisos) VALUES 
+('Casa', 6, 2),
+('Departamento', 4, 1),
+('Habitación', 2, 1),
+('Duplex', 8, 2),
+('Estudio', 2, 1);
+
+-- Insertar ambientes básicos
+INSERT INTO Ambiente (nombre, descripcion) VALUES 
+('Sala', 'Sala de estar principal'),
+('Comedor', 'Área para comedor'),
+('Cocina', 'Cocina equipada'),
+('Lavandería', 'Área de lavado'),
+('Jardín', 'Área verde');
+
+-- Insertar servicios básicos
+INSERT INTO Servicio (nombre, descripcion) VALUES 
+('Agua', 'Servicio de agua potable'),
+('Luz', 'Servicio de electricidad'),
+('Internet', 'Conexión a internet'),
+('Cable TV', 'Servicio de televisión por cable'),
+('Gas', 'Servicio de gas natural');
 
 select * from Usuario
