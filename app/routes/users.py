@@ -45,7 +45,7 @@ def login():
                 u.nombre,
                 u.correo,
                 u.contrasenia,
-                t.nombre as tipo_usuario
+                t.nombre as tipo_usuario,
                 u.imagen_url
             FROM Usuario u
             INNER JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
@@ -153,6 +153,83 @@ def add_user():
                 cur.close()
     return render_template('users/create_account.html')
 
+@users.route('/profile/<int:id_usuario>', methods=['GET', 'POST'])
+@login_required
+def config_account(id_usuario):
+    cursor = mysql.connection.cursor()
+    query = """
+    SELECT u.*, t.nombre as tipo_usuario
+    FROM Usuario u
+    INNER JOIN Tipo_usuario t ON u.Tipo_usuario_id_tipo_u = t.id_tipo_u
+    WHERE u.id_usuario = %s
+	"""
+    cursor.execute(query, (id_usuario,))
+    user = cursor.fetchone()
+    cursor.close()
+    if request.method == 'GET':
+        return render_template('users/config-account.html', user=user)
+    else:
+        nombre = request.form['nombre']
+        telefono = request.form['telefono']
+        doc_identidad = request.form['doc_identidad']
+        direccion = request.form['direccion']
+        imagen_file = request.files.get('imagen')
+        if imagen_file:
+            filename = secure_filename(imagen_file.filename)
+            imagen_file.save(f'app/static/img/{filename}')
+            imagen_url = f'/static/img/{filename}'
+        else:
+            imagen_url = user['imagen_url']
+        try:
+            cursor = mysql.connection.cursor()
+            cursor.execute("""
+                UPDATE Usuario SET 
+                    nombre = %s,
+                    telefono = %s,
+                    doc_identidad = %s,
+                    direccion = %s,
+                    imagen_url = %s
+                WHERE id_usuario = %s
+            """, (nombre, telefono, doc_identidad, direccion, imagen_url, id_usuario))
+            mysql.connection.commit()
+            cursor.close()
+            current_user.set_nombre(nombre)
+            current_user.set_imagen_url(imagen_url)
+            flash('Datos actualizados exitosamente', 'success')
+            return redirect(url_for('users.config_account',  id_usuario = id_usuario))
+        except Exception as e:
+            mysql.connection.rollback()
+            print(f"Error al actualizar datos: {str(e)}")
+            flash(f'Error al actualizar datos: {str(e)}', 'danger')
+@users.route('/edit_password/<int:id_usuario>', methods = ['POST'])
+@login_required
+def change_password(id_usuario):
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute('SELECT contrasenia FROM Usuario WHERE id_usuario = %s', (id_usuario,))
+        user = cursor.fetchone()
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        if current_password == new_password:
+            flash('La nueva contraseña no puede ser igual a la actual', 'warning')
+            return redirect(url_for('users.config_account', id_usuario = id_usuario))
+        else:
+            cursor.execute(
+                """
+				UPDATE Usuario SET contrasenia = %s WHERE id_usuario = %s
+				"""
+                , (new_password, id_usuario)
+				
+			)
+            cursor.connection.commit()
+            cursor.close()
+            flash('Contraseña actualizada exitosamente', 'success')
+            return redirect(url_for('users.config_account', id_usuario = id_usuario))
+    except Exception as e:
+        mysql.connection.rollback()
+        print(f"Error al actualizar contraseña: {str(e)}")
+        flash(f'Error al actualizar contraseña: {str(e)}', 'danger')
+        return redirect(url_for('users.config_account', id_usuario = id_usuario))
 
 @users.route('/logout')
 @login_required

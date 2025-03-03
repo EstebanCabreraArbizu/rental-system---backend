@@ -1,29 +1,17 @@
 {% extends "admin/layout_dashboard.html" %}
 {% block body %}
-<style>
-	.flash-container {
-		position: fixed;
-		top: 10px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 9999;
-		width: auto;
-		max-width: 90%;
-		word-wrap: break-word;
-	}
-</style>
 
 <div class="flash-container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category}} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+	{% with messages = get_flashed_messages(with_categories=true) %}
+		{% if messages %}
+			{% for category, message in messages %}
+				<div class="alert alert-{{ category}} alert-dismissible fade show" role="alert">
+					{{ message }}
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+				</div>
+			{% endfor %}
+		{% endif %}
+	{% endwith %}
 </div>
 
 <nav class="navbar navbar-expand-lg">
@@ -43,31 +31,39 @@
 		</div>
 		<div class="d-flex align-items-center gap-3">
 			<div class="dropdown">
-				<button class="btn btn-link position-relative" type="button" id="notificationsDropdown" data-bs-toggle="dropdown">
+				<button class="btn btn-link position-relative" type="button" id="notificationsDropdown"
+					data-bs-toggle="dropdown">
 					<i class="fas fa-bell text-muted"></i>
 					<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
 						3
 					</span>
 				</button>
 				<ul class="dropdown-menu dropdown-menu-end">
-					<li><h6 class="dropdown-header">Notificaciones</h6></li>
+					<li>
+						<h6 class="dropdown-header">Notificaciones</h6>
+					</li>
 					<li><a class="dropdown-item" href="#"><i class="fas fa-home me-2"></i>Nueva propiedad</a></li>
 					<li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Nuevo usuario</a></li>
 					<li><a class="dropdown-item" href="#"><i class="fas fa-bell me-2"></i>Actualización</a></li>
 				</ul>
 			</div>
 			<div class="dropdown">
-				<button class="btn btn-link d-flex align-items-center gap-2" type="button" id="userDropdown" data-bs-toggle="dropdown">
-					<img src="{{current_user.imagen_url}}" class="rounded-circle" alt="Usuario">
+				<button class="btn btn-link d-flex align-items-center gap-2" type="button" id="userDropdown"
+					data-bs-toggle="dropdown">
+					<img src="{{current_user.imagen_url}}" class="rounded-circle" alt="imagen_url" style="width: 40px; height: 40px; object-fit: cover;">
 					<span class="d-none d-md-block">{{ current_user.nombre }}</span>
 				</button>
 				<ul class="dropdown-menu dropdown-menu-end">
-					<li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
-					<li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
-					<li><hr class="dropdown-divider"></li>
+					<li><a class="dropdown-item"
+							href="{{url_for('users.config_account', id_usuario = current_user.id)}}"><i
+								class="fas fa-cog me-2"></i>Perfil</a></li>
+					<li>
+						<hr class="dropdown-divider">
+					</li>
 					<li><a class="dropdown-item text-danger" href="{{ url_for('users.logout') }}">
-						<i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-					</a></li>
+							<i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+						</a>
+					</li>
 				</ul>
 			</div>
 			<button id="darkModeToggle" class="btn btn-outline-secondary">
@@ -93,17 +89,8 @@
 		<a class="nav-link" href="#publicaciones">
 			<i class="fas fa-building"></i> Propiedades
 		</a>
-		<a class="nav-link" href="#reservas">
-			<i class="fas fa-calendar-check"></i> Reservas
-		</a>
-		<a class="nav-link" href="#reportes">
-			<i class="fas fa-chart-bar"></i> Reportes
-		</a>
-		<a class="nav-link" href="#configuracion">
-			<i class="fas fa-cog"></i> Configuración
-		</a>
-		<a class="nav-link text-danger" href="{{ url_for('users.logout') }}">
-			<i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+		<a class="nav-link" href="{{ url_for('users.config_account', id_usuario = current_user.id) }}">
+			<i class="fas fa-cog"></i> Configuración de la cuenta
 		</a>
 	</nav>
 </div>
@@ -111,63 +98,67 @@
 <!-- Main Content -->
 <main class="main-content">
 	<!-- Stats Cards -->
-	<div class="row g-4 mb-4" id = 'dashboard'>
-		<div class="col-md-3">
-			<div class="stat-card">
-				<div class="icon bg-primary text-white">
-					<i class="fas fa-users"></i>
+	<div class="row g-4 mb-4" id='dashboard'>
+		<div class="row g-4 mb-4">
+			
+			<div class="col-md-3">
+				<div class="stat-card">
+					<div class="icon bg-primary text-white">
+						<i class="fas fa-users"></i>
+					</div>
+					<h3 class="mb-2">{{ stats.total_usuarios }}</h3>
+					<p class="text-muted mb-0">Total Usuarios</p>
+					<div class="progress mt-3" style="height: 4px;">
+						<div class="progress-bar" style="width: 75%"></div>
+					</div>
 				</div>
-				<h3 class="mb-2">{{ stats.total_usuarios }}</h3>
-				<p class="text-muted mb-0">Total Usuarios</p>
-				<div class="progress mt-3" style="height: 4px;">
-					<div class="progress-bar" style="width: 75%"></div>
+			</div>
+			<div class="col-md-3">
+				<div class="stat-card">
+					<div class="icon bg-success text-white">
+						<i class="fas fa-user"></i>
+					</div>
+					<h3 class="mb-2">{{ stats.total_clientes }}</h3>
+					<p class="text-muted mb-0">Clientes</p>
+					<div class="progress mt-3" style="height: 4px;">
+						<div class="progress-bar" style="width: 75%"></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="stat-card">
+					<div class="icon bg-info text-white">
+						<i class="fas fa-user-tie"></i>
+					</div>
+					<h3 class="mb-2">{{ stats.total_propietarios }}</h3>
+					<p class="text-muted mb-0">Propietarios</p>
+					<div class="progress mt-3" style="height: 4px;">
+						<div class="progress-bar" style="width: 75%"></div>
+					</div>
 				</div>
 			</div>
 		</div>
-		<div class="col-md-3">
-			<div class="stat-card">
-				<div class="icon bg-success text-white">
-					<i class="fas fa-user"></i>
-				</div>
-				<h3 class="mb-2">{{ stats.total_clientes }}</h3>
-				<p class="text-muted mb-0">Clientes</p>
-				<div class="progress mt-3" style="height: 4px;">
-					<div class="progress-bar" style="width: 75%"></div>
+		<!-- Charts -->
+		<div class="row g-4 mb-4">
+			<div class="col-md-7">
+				<div class="stat-card">
+					<h5 class="mb-4">Actividad Mensual</h5>
+					<canvas id="activityChart"></canvas>
 				</div>
 			</div>
-		</div>
-		<div class="col-md-3">
-			<div class="stat-card">
-				<div class="icon bg-info text-white">
-					<i class="fas fa-user-tie"></i>
-				</div>
-				<h3 class="mb-2">{{ stats.total_propietarios }}</h3>
-				<p class="text-muted mb-0">Propietarios</p>
-				<div class="progress mt-3" style="height: 4px;">
-					<div class="progress-bar" style="width: 75%"></div>
+			<div class="col-md-5">
+				<div class="stat-card">
+					<h5 class="mb-4">Distribución de Usuarios</h5>
+					<canvas id="userTypeChart"></canvas>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Charts -->
-	<div class="row g-4 mb-4">
-		<div class="col-md-8">
-			<div class="stat-card">
-				<h5 class="mb-4">Actividad Mensual</h5>
-				<canvas id="activityChart"></canvas>
-			</div>
-		</div>
-		<div class="col-md-4">
-			<div class="stat-card">
-				<h5 class="mb-4">Distribución de Usuarios</h5>
-				<canvas id="userTypeChart"></canvas>
-			</div>
-		</div>
-	</div>
+
 
 	<!-- Tablas de Usuarios -->
-	<div class="row g-4" id = 'usuarios'>
+	<div class="row g-4" id='usuarios'>
 		<!-- Tabla de Clientes -->
 		<div class="col-12">
 			<div class="table-container">
@@ -197,7 +188,8 @@
 								<td>{{ usuario.correo }}</td>
 								<td>{{ usuario.fecha_ingreso.strftime('%Y-%m-%d') }}</td>
 								<td>
-									<button class="btn btn-sm btn-info" onclick="verDetallesUsuario({{ usuario.id_usuario }})">
+									<button class="btn btn-sm btn-info"
+										onclick="verDetallesUsuario({{ usuario.id_usuario }})">
 										<i class="fas fa-eye"></i> Ver más
 									</button>
 								</td>
@@ -239,7 +231,8 @@
 								<td>{{ usuario.correo }}</td>
 								<td>{{ usuario.fecha_ingreso.strftime('%Y-%m-%d') }}</td>
 								<td>
-									<button class="btn btn-sm btn-info" onclick="verDetallesUsuario({{ usuario.id_usuario }})">
+									<button class="btn btn-sm btn-info"
+										onclick="verDetallesUsuario({{ usuario.id_usuario }})">
 										<i class="fas fa-eye"></i> Ver más
 									</button>
 								</td>
@@ -254,7 +247,7 @@
 	</div>
 
 	<!-- Tablas de Publicaciones -->
-	<div class="row g-4" id = 'publicaciones'>
+	<div class="row g-4" id='publicaciones'>
 		<div class="col-12">
 			<div class="table-container">
 				<div class="d-flex justify-content-between align-items-center mb-4">
@@ -282,10 +275,11 @@
 								<td>{{ publicacion.titulo }}</td>
 								<td>{{ publicacion.precio_unitario }}</td>
 								<td>{{ publicacion.fecha_publicacion.strftime('%Y-%m-%d') }}</td>
-								<td>{{publicacion.propietario}}</td>
+								<td>{{ publicacion.propietario }}</td>
 								<td>
-									<button class="btn btn-sm btn-info" onclick="verDetallesPublicacion({{ publicacion.id_publicacion }})">
-										<i class="fas fa-eye">Ver más</i> 
+									<button class="btn btn-sm btn-info"
+										onclick="verDetallesPublicacion({{ publicacion.id_publicacion }})">
+										<i class="fas fa-eye"></i> Ver más
 									</button>
 								</td>
 							</tr>
@@ -295,55 +289,55 @@
 				</div>
 			</div>
 		</div>
-	<div>
+		<div>
 
-	<!-- Modal de Detalles de Usuario -->
-	<div class="modal fade" id="userDetailsModal" tabindex="-1">
-		<div class="modal-dialog modal-lg">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">Detalles del Usuario</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-				</div>
-				<div class="modal-body">
-					<div class="row">
-						<div class="col-md-4 text-center">
-							<img id="userAvatar" src="" alt="Avatar" class="rounded-circle mb-3" 
-								 style="width: 150px; height: 150px; object-fit: cover;">
+			<!-- Modal de Detalles de Usuario -->
+			<div class="modal fade" id="userDetailsModal" tabindex="-1">
+				<div class="modal-dialog modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title">Detalles del Usuario</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 						</div>
-						<div class="col-md-8">
-							<div class="user-details">
-								<!-- Los detalles se llenarán dinámicamente -->
+						<div class="modal-body">
+							<div class="row">
+								<div class="col-md-4 text-center">
+									<img id="userAvatar" src="" alt="Avatar" class="rounded-circle mb-3"
+										style="width: 150px; height: 150px; object-fit: cover;">
+								</div>
+								<div class="col-md-8">
+									<div class="user-details">
+										<!-- Los detalles se llenarán dinámicamente -->
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-	</div>
-	<!-- Modal de Detalles de la publicación -->
-	<div class="modal fade" id="publicationDetailsModal" tabindex="-1">
-		<div class="modal-dialog modal-lg">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">Detalles de la publicación</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-				</div>
-				<div class="modal-body">
-					<div class="row">
-						<div class="col-md-4 text-center">
-							<img id="publicationAvatar" src="" alt="Avatar" class="rounded-circle mb-3" 
-								 style="width: 150px; height: 150px; object-fit: cover;">
+			<!-- Modal de Detalles de la publicación -->
+			<div class="modal fade" id="publicationDetailsModal" tabindex="-1">
+				<div class="modal-dialog modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title">Detalles de la publicación</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 						</div>
-						<div class="col-md-8">
-							<div class="publication-details">
-								<!-- Los detalles se llenarán dinámicamente -->
+						<div class="modal-body">
+							<div class="row">
+								<div class="col-md-4 text-center">
+									<img id="publicationAvatar" src="" alt="Avatar" class="rounded-circle mb-3"
+										style="width: 150px; height: 150px; object-fit: cover;">
+								</div>
+								<div class="col-md-8">
+									<div class="publication-details">
+										<!-- Los detalles se llenarán dinámicamente -->
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-	</div>
 </main>
 {% endblock %}

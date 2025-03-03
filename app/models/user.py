@@ -1,5 +1,4 @@
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 from app import login_manager
 from app.db import mysql
 
@@ -16,7 +15,10 @@ class User(UserMixin):
         return self._is_authenticated
     def get_id(self):
         return str(self.id)
-    
+    def set_nombre(self, nombre):
+        self.nombre = nombre
+    def set_imagen_url(self, image_url):
+        self.imagen_url = image_url
     @staticmethod
     def get_by_id(user_id):
         cur = mysql.connection.cursor()

@@ -1,0 +1,33 @@
+.profile-section {
+	background: white;
+	border-radius: 15px;
+	padding: 2rem;
+	box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+.profile-image {
+	width: 150px;
+	height: 150px;
+		border-radius: 50%;
+	object-fit: cover;
+	margin-bottom: 1rem;
+}
+
+.image-upload-container {
+	position: relative;
+	display: inline-block;
+}
+
+.image-upload-overlay {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0,0,0,0.5);
+	color: white;
+	padding: 0.5rem;
+	border-radius: 0 0 15px 15px;
+	cursor: pointer;
+	width: 100%;
+	text-align: center;
+}

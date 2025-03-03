@@ -54,8 +54,22 @@ def dashboard():
         row = cursor.fetchone()
         if row:
             stats['total_interesados'] = row['total_interesados'] or 0
-
-            # Consulta para obtener publicaciones activas
+            
+		# Consulta para obtener clientes potenciales
+        cursor.execute("""
+            SELECT 
+                cp.Usuario_id_usuario AS cliente_id,
+                u.nombre AS cliente_nombre,
+                p.id_publicacion AS publicacion_id,
+                p.titulo AS publicacion_titulo
+            FROM Clientes_Potenciales cp
+            JOIN Publicacion p ON cp.Publicacion_id_publicacion = p.id_publicacion
+            JOIN Usuario u ON cp.Usuario_id_usuario = u.id_usuario
+            WHERE p.Usuario_id_usuario = %s
+        """, (current_user.id,))
+            
+        clientes = cursor.fetchall()
+        # Consulta para obtener publicaciones activas
         cursor.execute("""
             SELECT
                 p.id_publicacion,
@@ -88,7 +102,6 @@ def dashboard():
                 tv.nombre, tve.nombre
             ORDER BY p.fecha_publicacion DESC
         """, (current_user.id,))
-
         publicaciones = []
         for row in cursor.fetchall():
             publicacion = {
@@ -110,6 +123,7 @@ def dashboard():
         print(f"Publicaciones encontradas: {len(publicaciones)}")
 
         return render_template('owner/dashboard.html',
+                               clientes = clientes,
                                publicaciones=publicaciones,
                                stats=stats,
                                current_user=current_user)
@@ -208,27 +222,6 @@ def get_publication(id):
 #         cur.close()
 #         return redirect(url_for('owner.dashboard'))
 
-# Ruta para actualizar el estado de una publicación
-@owner.route('/update/<int:id>/estado', methods=['PUT'])
-@login_required
-def update_state_publication(id):
-    try:
-        estado = request.json.get('estado')
-        cursor = mysql.connection.cursor()
-
-        cursor.execute("""
-            UPDATE Publicacion
-            SET estado = %s
-            WHERE id_publicacion = %s AND Usuario_id_usuario = %s
-        """, (estado, id, current_user.id))
-
-        mysql.connection.commit()
-        return jsonify({'success': True, 'message': 'Estado actualizado correctamente'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        cursor.close()
-
 # Ruta para obtener estadísticas de interesados por mes
 
 
@@ -308,9 +301,9 @@ def get_interesados():
 # Ruta para eliminar una publicación
 
 
-@owner.route('/delete/<int:id>', methods=['DELETE'])
+@owner.route('/delete/<int:publication_id>', methods=['DELETE'])
 @login_required
-def delete_publication(id):
+def delete_publication(publication_id):
     try:
         cursor = mysql.connection.cursor()
 
@@ -318,14 +311,21 @@ def delete_publication(id):
         cursor.execute("""
             DELETE FROM Clientes_Potenciales
             WHERE Publicacion_id_publicacion = %s
-        """, (id,))
+        """, (publication_id,))
 
         # Luego eliminamos la publicación
         cursor.execute("""
             DELETE FROM Publicacion
             WHERE id_publicacion = %s AND Usuario_id_usuario = %s
-        """, (id, current_user.id))
-
+        """, (publication_id, current_user.id))
+		# Obtener los IDs asociados antes de confirmar la eliminación 
+        cursor.execute("SELECT Vivienda_id_vivienda, Vehiculo_id_vehiculo FROM Publicacion WHERE id_publicacion = %s", (publication_id,))
+        registro = cursor.fetchone()
+        if registro:
+            if registro.get('Vivienda_id_vivienda'):
+                cursor.execute("DELETE FROM Vivienda WHERE id_vivienda = %s", (registro['Vivienda_id_vivienda'],))
+            if registro.get('Vehiculo_id_vehiculo'):
+                cursor.execute("DELETE FROM Vehiculo WHERE id_vehiculo = %s", (registro['Vehiculo_id_vehiculo'],))
         mysql.connection.commit()
         return jsonify({'success': True, 'message': 'Publicación eliminada correctamente'})
     except Exception as e:
@@ -517,3 +517,54 @@ def crear_publicacion():
     finally:
         if cursor:
             cursor.close()
+@owner.route('/publicaciones', methods=['GET'])
+@login_required
+def get_publicaciones():
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute("""
+            SELECT
+                p.id_publicacion,
+                p.titulo,
+                p.descripcion,
+                p.precio_unitario,
+                p.fecha_publicacion,
+                p.estado,
+                p.distrito,
+                p.direccion,
+                p.imagenes,
+                CASE WHEN p.Vivienda_id_vivienda IS NOT NULL THEN 'Vivienda'
+                     WHEN p.Vehiculo_id_vehiculo IS NOT NULL THEN 'Vehículo'
+                END as tipo_publicacion,
+                COUNT(cp.id_clientes) as total_interesados
+            FROM Publicacion p
+            LEFT JOIN Clientes_Potenciales cp ON p.id_publicacion = cp.Publicacion_id_publicacion
+            WHERE p.Usuario_id_usuario = %s AND p.estado = 'Activo'
+            GROUP BY p.id_publicacion, p.titulo, p.descripcion, p.precio_unitario,
+                     p.fecha_publicacion, p.estado, p.distrito, p.direccion, p.imagenes,
+                     p.Vivienda_id_vivienda, p.Vehiculo_id_vehiculo
+            ORDER BY p.fecha_publicacion DESC
+        """, (current_user.id,))
+        publicaciones = []
+        for row in cursor.fetchall():
+            publicacion = {
+                'id_publicacion': row['id_publicacion'],
+                'titulo': row['titulo'],
+                'descripcion': row['descripcion'],
+                'precio_unitario': float(row['precio_unitario']),
+                'fecha_publicacion': row['fecha_publicacion'].strftime('%Y-%m-%d %H:%M:%S'),
+                'estado': row['estado'],
+                'distrito': row['distrito'],
+                'direccion': row['direccion'],
+                'imagenes': row['imagenes'].split(',') if row['imagenes'] else [],
+                'tipo_publicacion': row['tipo_publicacion'],
+                'total_interesados': row['total_interesados']
+            }
+            publicaciones.append(publicacion)
+
+        return jsonify({'success': True, 'publicaciones': publicaciones})
+    except Exception as e:
+        print(f"Error en get_publicaciones: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        cursor.close()

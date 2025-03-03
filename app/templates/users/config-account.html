@@ -5,67 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración de Cuenta - RentAll</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .profile-section {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
-        
-        .profile-image {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 1rem;
-        }
-        
-        .image-upload-container {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .image-upload-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.5);
-            color: white;
-            padding: 0.5rem;
-            border-radius: 0 0 15px 15px;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
-        }
-    </style>
+    <link rel="stylesheet" href="{{url_for('static', filename = 'css/config_account.css')}}">
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('auth.dashboard_propietario') }}">
-                <i class="fas fa-home me-2"></i>RentAll
-            </a>
+			{% if user.tipo_usuario == 'Propietario' %}
+	            <a class="navbar-brand" href="{{ url_for('owner.dashboard') }}">
+	                <i class="fas fa-home me-2"></i>RentAll
+	            </a>
+			{% else %}
+				<a class="navbar-brand" href="{{ url_for('admin.dashboard') }}">
+					<i class="fas fa-home me-2"></i>RentAll
+				</a>
+			{% endif %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.dashboard_propietario') }}">
-                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                        </a>
+						{% if user.tipo_usuario == 'Propietario' %}
+	                        <a class="nav-link" href="{{ url_for('owner.dashboard') }}">
+	                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+	                        </a>
+						{% else %}
+							<a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+								<i class="fas fa-tachometer-alt me-2"></i>Dashboard
+							</a>
+						{% endif %}
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('auth.config_account') }}">
+                        <a class="nav-link active" href="{{ url_for('users.config_account', id_usuario = user.id_usuario) }}">
                             <i class="fas fa-cog me-2"></i>Configuración
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                        <a class="nav-link" href="{{ url_for('users.logout')}}">
                             <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                         </a>
                     </li>
@@ -83,7 +60,8 @@
                         <img src="{{ user.imagen_url or url_for('static', filename='img/default-avatar.png') }}" 
                              alt="Foto de perfil" 
                              class="profile-image" 
-                             id="profileImage">
+                             id="profileImage"
+							 name = "imagen_url">
                         <label for="imageUpload" class="image-upload-overlay">
                             <i class="fas fa-camera me-2"></i>Cambiar foto
                         </label>
@@ -100,12 +78,14 @@
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
-                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                                <div class="alert alert-{{ category }}">{{ message }}
+									<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+								</div>
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
                     
-                    <form method="POST" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('users.config_account', id_usuario = user.id_usuario) }}"" enctype="multipart/form-data">
                         <input type="file" id="imageUpload" name="imagen" class="d-none" accept="image/*">
                         
                         <div class="mb-3">
@@ -149,11 +129,11 @@
                 
                 <div class="profile-section mt-4">
                     <h3 class="mb-4">Seguridad</h3>
-                    <form method="POST" action="{{ url_for('auth.change_password') }}">
+                    <form method="POST" action="{{ url_for('users.change_password', id_usuario = user.id_usuario) }}">
                         <div class="mb-3">
                             <label for="currentPassword" class="form-label">Contraseña Actual</label>
                             <input type="password" class="form-control" id="currentPassword" 
-                                   name="current_password" required>
+                                   name="current_password" value="{{ user.contrasenia or '' }}" required>
                         </div>
                         
                         <div class="mb-3">

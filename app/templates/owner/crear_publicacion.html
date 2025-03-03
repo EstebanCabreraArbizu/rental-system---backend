@@ -59,17 +59,18 @@
 							<div class="card-body">
 								<div class="mb-3">
 									<label for="titulo" class="form-label">Título</label>
-									<input type="text" class="form-control" id="titulo" required>
+									<input type="text" class="form-control" id="titulo" maxlength="30" required>
 								</div>
 								<div class="mb-3">
 									<label for="descripcion" class="form-label">Descripción</label>
-									<textarea class="form-control" id="descripcion" rows="3" required></textarea>
+									<textarea class="form-control" id="descripcion" rows="3" maxlength="50"
+										required></textarea>
 								</div>
 								<div class="mb-3">
 									<label for="precio" class="form-label">Precio por día</label>
 									<div class="input-group">
 										<span class="input-group-text">S/.</span>
-										<input type="number" class="form-control" id="precio" required>
+										<input type="number" class="form-control" maxlength="10" id="precio" required>
 									</div>
 								</div>
 							</div>
@@ -99,7 +100,7 @@
 								<div class="mb-3">
 									<label for="dimensiones" class="form-label">Dimensiones (m²)</label>
 									<input type="text" class="form-control" id="dimensiones" name="dimensiones"
-										placeholder="Ejemplo: 100m²" required>
+										maxlength="20" placeholder="Ejemplo: 100m²" required>
 								</div>
 								<!-- Tipo de Vivienda -->
 								<div class="mb-3">
@@ -176,31 +177,34 @@
 								<div class="row">
 									<div class="col-md-6 mb-3">
 										<label for="marca" class="form-label">Marca</label>
-										<input type="text" class="form-control" id="marca" name="marca" required>
+										<input type="text" class="form-control" id="marca" name="marca" maxlength="10"
+											required>
 									</div>
 									<div class="col-md-6 mb-3">
 										<label for="modelo" class="form-label">Modelo</label>
-										<input type="text" class="form-control" id="modelo" name="modelo" required>
+										<input type="text" class="form-control" id="modelo" name="modelo" maxlength="20"
+											required>
 									</div>
 								</div>
 								<div class="row">
 									<div class="col-md-6 mb-3">
 										<label for="anio" class="form-label">Año</label>
-										<input type="date" class="form-control" id="anio" name="anio" required>
+										<input type="number" class="form-control" id="anio" name="anio" min="1900"
+											max="2100" placeholder="AAAA" required>
 									</div>
 									<div class="col-md-6 mb-3">
 										<label for="placa" class="form-label">Placa</label>
-										<input type="text" class="form-control" id="placa" name="placa" required>
+										<input type="text" class="form-control" id="placa" name="placa" maxlength="10" required>
 									</div>
 								</div>
 								<div class="row">
 									<div class="col-md-6 mb-3">
 										<label for="color" class="form-label">Color</label>
-										<input type="text" class="form-control" id="color" name="color" required>
+										<input type="text" class="form-control" id="color" name="color" maxlength="10" required>
 									</div>
 									<div class="col-md-6 mb-3">
 										<label for="transmision" class="form-label">Transmisión</label>
-										<select class="form-select" id="transmision" name="transmision" required>
+										<select class="form-select" id="transmision" name="transmision" maxlength="10" required>
 											<option value="">Seleccione...</option>
 											<option value="Manual">Manual</option>
 											<option value="Automática">Automática</option>
@@ -211,11 +215,11 @@
 									<div class="col-md-4 mb-3">
 										<label for="cantCombustible" class="form-label">Capacidad de Combustible</label>
 										<input type="text" class="form-control" id="cantCombustible"
-											name="cant_combustible" required>
+											name="cant_combustible" maxlength="10" required>
 									</div>
 									<div class="col-md-4 mb-3">
 										<label for="tipoCombustible" class="form-label">Tipo de Combustible</label>
-										<select class="form-select" id="tipoCombustible" name="tipo_combustible"
+										<select class="form-select" id="tipoCombustible" name="tipo_combustible" maxlength="10"
 											required>
 											<option value="">Seleccione...</option>
 											<option value="Gasolina">Gasolina</option>
@@ -226,7 +230,7 @@
 									</div>
 									<div class="col-md-4 mb-3">
 										<label for="kilometraje" class="form-label">Kilometraje</label>
-										<input type="text" class="form-control" id="kilometraje" name="kilometraje"
+										<input type="text" class="form-control" id="kilometraje" name="kilometraje" maxlength="10" 
 											required>
 									</div>
 								</div>
@@ -269,24 +273,25 @@
 							<div class="card-body">
 								<div class="mb-3">
 									<label for="distrito" class="form-label">Distrito</label>
-									<select class="form-select" id="distrito" required>
+									<select class="form-select" id="distrito" maxlength="40" required>
 										<option value="">Seleccione un distrito...</option>
 										<!-- Los distritos se cargarán dinámicamente -->
 									</select>
 								</div>
 								<div class="mb-3">
 									<label for="direccion" class="form-label">Dirección</label>
-									<input type="text" class="form-control" id="direccion" required>
+									<input type="text" class="form-control" id="direccion" maxlength="30" required>
 								</div>
 								<div class="row">
 									<div class="col-md-6 mb-3">
 										<label for="latitud" class="form-label">Latitud</label>
-										<input type="number" step="any" class="form-control" id="latitud"  name = "latitud" required>
+										<input type="number" step="any" class="form-control" id="latitud" name="latitud"
+											required>
 									</div>
 									<div class="col-md-6 mb-3">
 										<label for="longitud" class="form-label">Longitud</label>
 										<input type="number" step="any" class="form-control" id="longitud"
-										name = "longitud" required>
+											name="longitud" required>
 									</div>
 								</div>
 							</div>

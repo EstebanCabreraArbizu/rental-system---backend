@@ -1,55 +1,30 @@
 {% extends "owner/layout_dashboard.html" %}
 {% block body %}
-<style>
-	.flash-container {
-		position: fixed;
-		top: 10px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 9999;
-		width: auto;
-		max-width: 90%;
-		word-wrap: break-word;
-	}
-</style>
-
 <div class="flash-container">
 	{% with messages = get_flashed_messages(with_categories=true) %}
-	{% if messages %}
-	{% for category, message in messages %}
-	<div class="alert alert-{{ category}} alert-dismissible fade show" role="alert">
-		{{ message }}
-		<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	</div>
-	{% endfor %}
-	{% endif %}
+		{% if messages %}
+			{% for category, message in messages %}
+				<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+					{{ message }}
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+				</div>
+			{% endfor %}
+		{% endif %}
 	{% endwith %}
 </div>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+
+<!-- Encabezado y Navbar -->
+<nav class="navbar navbar-expand-lg navbar-custom">
 	<div class="container-fluid">
 		<a class="navbar-brand" href="#">
-			<i class="fas fa-home me-2"></i>RentAll
+			<i class="fas fa-home me-2"></i>
+			RentAll - Propietario
 		</a>
-		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-			<span class="navbar-toggler-icon"></span>
-		</button>
-		<div class="collapse navbar-collapse" id="navbarNav">
-			<ul class="navbar-nav me-auto">
-				<li class="nav-item">
-					<a class="nav-link active" href="#">Dashboard</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" href="#">Publicaciones</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" href="#">Mensajes</a>
-				</li>
-			</ul>
+		<div class="collapse navbar-collapse justify-content-end">
 			<div class="d-flex align-items-center">
-				<img src="{{ current_user.imagen_url }}" class="rounded-circle me-2"
+				<img src="{{ current_user.imagen_url }}" class="rounded-circle me-2" alt="Avatar"
 					style="width: 40px; height: 40px; object-fit: cover;">
-				<div class="text-white me-3">{{ current_user.nombre }}</div>
+				<span class="text-white me-3">{{ current_user.nombre }}</span>
 				<a href="{{ url_for('users.logout') }}" class="btn btn-outline-light">
 					<i class="fas fa-sign-out-alt"></i> Salir
 				</a>
@@ -58,95 +33,94 @@
 	</div>
 </nav>
 
+<!-- Contenedor principal y Sidebar -->
 <div class="container-fluid">
 	<div class="row">
 		<!-- Sidebar -->
 		<div class="col-md-2 sidebar py-3">
+			<div class="text-center mb-4">
+				<img src="https://i.imgur.com/8Km9tLL.png" alt="RentAll Logo" class="img-fluid">
+				<h6 class="text-light mt-2">Panel del Propietario</h6>
+			</div>
 			<ul class="nav flex-column">
 				<li class="nav-item">
-					<a class="nav-link active" href="#">
-						<i class="fas fa-tachometer-alt me-2"></i>Dashboard
+					<a class="nav-link active" href="#dashboardSection">
+						<i class="fas fa-tachometer-alt me-2"></i> Dashboard
 					</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" href="#">
-						<i class="fas fa-list me-2"></i>Mis Publicaciones
+					<a class="nav-link" href="#publicacionesSection">
+						<i class="fas fa-list me-2"></i> Mis Publicaciones
 					</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" href="#">
-						<i class="fas fa-user-friends me-2"></i>Interesados
+					<a class="nav-link" href="#clientesSection">
+						<i class="fas fa-user-friends me-2"></i> Interesados
 					</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" href="#">
-						<i class="fas fa-chart-bar me-2"></i>Reportes
-					</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" href="#">
-						<i class="fas fa-cog me-2"></i>Configuración
+					<a class="nav-link" href="{{ url_for('users.config_account', id_usuario = current_user.id) }}">
+						<i class="fas fa-cog me-2"></i> Configuración de cuenta
 					</a>
 				</li>
 			</ul>
 		</div>
 
-		<!-- Main Content -->
-		<div class="col-md-10 py-3">
-			<h2 class="mb-4">Dashboard</h2>
-
-			<!-- Stats Cards -->
-			<div class="row mb-4">
-				<div class="col-md-3">
-					<div class="stats-card">
-						<h5>Total Publicaciones</h5>
-						<h2>{{ stats.total_publicaciones }}</h2>
+		<!-- Contenido principal -->
+		<div class="col-md-10">
+			<!-- Sección de estadísticas -->
+			<div id="dashboardSection" class="row mb-4">
+				<div class="row g-4">
+					<div class="col-md-3">
+						<div class="stats-card text-center">
+							<h5>Total Publicaciones</h5>
+							<h2>{{ stats.total_publicaciones }}</h2>
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="stats-card text-center">
+							<h5>Publicaciones Activas</h5>
+							<h2>{{ stats.publicaciones_activas }}</h2>
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="stats-card text-center">
+							<h5>Publicaciones Inactivas</h5>
+							<h2>{{ stats.publicaciones_inactivas }}</h2>
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="stats-card text-center">
+							<h5>Total Interesados</h5>
+							<h2>{{ stats.total_interesados }}</h2>
+						</div>
 					</div>
 				</div>
-				<div class="col-md-3">
-					<div class="stats-card">
-						<h5>Publicaciones Activas</h5>
-						<h2>{{ stats.publicaciones_activas }}</h2>
+				<!-- Gráficos -->
+				<div class="row g-4 mt-4">
+					<div class="col-md-6">
+						<div class="chart-container">
+							<h5>Publicaciones por Tipo</h5>
+							<canvas id="tipoPublicacionChart"></canvas>
+						</div>
 					</div>
-				</div>
-				<div class="col-md-3">
-					<div class="stats-card">
-						<h5>Publicaciones Inactivas</h5>
-						<h2>{{ stats.publicaciones_inactivas }}</h2>
-					</div>
-				</div>
-				<div class="col-md-3">
-					<div class="stats-card">
-						<h5>Total Interesados</h5>
-						<h2>{{ stats.total_interesados }}</h2>
+					<div class="col-md-6">
+						<div class="chart-container">
+							<h5>Interesados por Mes</h5>
+							<canvas id="interesadosChart"></canvas>
+						</div>
 					</div>
 				</div>
 			</div>
 
-			<!-- Charts Row -->
-			<div class="row mb-4">
-				<div class="col-md-6">
-					<div class="chart-container">
-						<h5>Publicaciones por Tipo</h5>
-						<canvas id="tipoPublicacionChart"></canvas>
-					</div>
-				</div>
-				<div class="col-md-6">
-					<div class="chart-container">
-						<h5>Interesados por Mes</h5>
-						<canvas id="interesadosChart"></canvas>
-					</div>
-				</div>
-			</div>
-
-			<!-- Recent Publications -->
-			<div class="card">
+			<!-- Sección: Publicaciones Recientes -->
+			<div id="publicacionesSection" class="card mb-4">
 				<div class="card-header">
 					<h5 class="mb-0">Publicaciones Recientes</h5>
 				</div>
 				<div class="card-body">
 					<div class="table-responsive">
-						<table class="table table-hover">
+						<table class="custom-table">
 							<thead>
 								<tr>
 									<th>Título</th>
@@ -157,7 +131,7 @@
 									<th>Acciones</th>
 								</tr>
 							</thead>
-							<tbody>
+							<tbody id="publicacionesTable">
 								{% for pub in publicaciones[:5] %}
 								<tr>
 									<td>{{ pub.titulo }}</td>
@@ -173,13 +147,52 @@
 									<td>
 										<button class="btn btn-sm btn-primary"
 											onclick="verDetallesPublicacion({{ pub.id_publicacion }})">
-											<i class="fas fa-eye"> Ver más</i>
+											<i class="fas fa-eye"></i> Ver más
 										</button>
 										<button class="btn btn-sm btn-danger"
 											onclick="eliminarPublicacion({{ pub.id_publicacion }})">
-											<i class="fas fa-trash">
-												Eliminar
-											</i>
+											<i class="fas fa-trash"></i> Eliminar
+										</button>
+									</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+					<a href="{{ url_for('owner.crear_publicacion') }}" class="btn btn-primary mt-3">
+						<i class="fas fa-plus"></i> Nueva Publicación
+					</a>
+				</div>
+			</div>
+
+			<!-- Sección: Clientes Potenciales -->
+			<div id="clientesSection" class="card mb-4">
+				<div class="card-header">
+					<h5 class="mb-0">Clientes Potenciales</h5>
+				</div>
+				<div class="card-body">
+					<div class="table-responsive">
+						<table class="custom-table">
+							<thead>
+								<tr>
+									<th>ID Cliente</th>
+									<th>Nombre</th>
+									<th>ID Publicación</th>
+									<th>Título Publicación</th>
+									<th>Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for cliente in clientes %}
+								<tr>
+									<td>{{ cliente.cliente_id }}</td>
+									<td>{{ cliente.cliente_nombre }}</td>
+									<td>{{ cliente.publicacion_id }}</td>
+									<td>{{ cliente.publicacion_titulo }}</td>
+									<td>
+										<button class="btn btn-sm btn-primary"
+											onclick="verDetallesUsuario({{ cliente.cliente_id }})">
+											<i class="fas fa-eye"></i> Ver más
 										</button>
 									</td>
 								</tr>
@@ -189,11 +202,55 @@
 					</div>
 				</div>
 			</div>
+		</div>
+	</div>
+</div>
 
-			<!-- Agregar este botón donde sea apropiado en tu dashboard -->
-			<a href="{{ url_for('owner.crear_publicacion') }}" class="btn btn-primary">
-				<i class="fas fa-plus"></i> Nueva Publicación
-			</a>
+<!-- Modal de Detalles de Usuario -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Detalles del Usuario</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="row">
+					<div class="col-md-4 text-center">
+						<img id="userAvatar" src="" alt="Avatar" class="rounded-circle mb-3"
+							style="width: 150px; height: 150px; object-fit: cover;">
+					</div>
+					<div class="col-md-8">
+						<div class="user-details">
+							<!-- Detalles llenados dinámicamente -->
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Modal de Detalles de Publicación -->
+<div class="modal fade" id="publicationDetailsModal" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Detalles de la Publicación</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="row">
+					<div class="col-md-4 text-center">
+						<img id="publicationAvatar" src="" alt="Avatar" class="rounded-circle mb-3"
+							style="width: 150px; height: 150px; object-fit: cover;">
+					</div>
+					<div class="col-md-8">
+						<div class="publication-details">
+							<!-- Detalles llenados dinámicamente -->
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>

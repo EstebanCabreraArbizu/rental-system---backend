@@ -1,17 +1,5 @@
 {% extends "users/layout_create-account.html"%}
 {% block body %}
-<style>
-	.flash-container {
-		position: fixed;
-		top: 10px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 9999;
-		width: auto;
-		max-width: 90%;
-		word-wrap: break-word;
-	}
-</style>
 
 <div class="flash-container">
 	{% with messages = get_flashed_messages(with_categories=true) %}
