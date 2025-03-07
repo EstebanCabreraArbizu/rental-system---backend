@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<title>RentAll - Alquiler de Viviendas y Vehículos</title>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width" />
+	<link rel="stylesheet" href="styles.css" />
+	<script type="module" src="script.js"></script>
+</head>
+
+<body>
+	<nav>
+		<div class="nav-brand">RentAll</div>
+		<div class="nav-links">
+			<a href="/" aria-current="page">Inicio</a>
+			<a href="/page2.html">Viviendas</a>
+			<a href="/page2.html">Vehículos</a>
+			<a href="#publicar" class="publish-btn">Publicar</a>
+			<a href="/page2.html">Contacto</a>
+		</div>
+	</nav>
+	<header class="hero">
+		<h1>Encuentra tu próximo hogar o vehículo</h1>
+		<div class="search-container">
+			<select class="search-type">
+				<option value="viviendas">Viviendas</option>
+				<option value="vehiculos">Vehículos</option>
+			</select>
+			<input type="text" placeholder="¿Qué estás buscando?" class="search-input">
+			<button class="search-button">Buscar</button>
+		</div>
+	</header>
+	<main>
+		<section class="categories">
+			<h2>Viviendas Destacadas</h2>
+			<div class="property-grid">
+				{% for pub in pubs if pub.Vivienda_id_vivienda%}
+					<div class="property-card">
+						<div class="property-image">
+							<img src = "{{pub.imagenes[0] if pub.imagenes else url_for('static', filename = 'img/default.jpg')}}" alt="Vivienda">
+						</div>
+						<div class="property-info">
+							<h3>{{ pub.titulo or 'Vivienda'}}</h3>
+							<p>{{ pub.descripcion or 'Detalle de la vivienda' }}</p>
+							<p class="price">${{ pub.precio or '0' }}</p>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+
+			<h2>Vehículos Disponibles</h2>
+			<div class="vehicle-grid">
+				{% for pub in pubs if pub.Vehiculo_id_vehiculo %}
+					<div class="vehicle-card">
+						<div class="vehicle-image">
+							<img src = "{{pub.imagenes[0] if pub.imagenes else url_for('static', filename = 'img/default.jpg')}}" alt="Vehículo">
+						</div>
+						<div class="vehicle-info">
+							<h3>{{ pub.titulo or 'Vehículo' }}</h3>
+							<p>{{ pub.descripcion or 'Detalle del vehículo' }}</p>
+							<p class="price">${{ pub.precio or '0' }}/día</p>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		</section>
+	</main>
+	<footer>
+		<p>&copy; 2024 RentAll. Todos los derechos reservados.</p>
+	</footer>
+</body>
+
+</html>

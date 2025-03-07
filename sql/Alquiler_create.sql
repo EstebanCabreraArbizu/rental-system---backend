@@ -1,5 +1,5 @@
 -- Created by Vertabelo (http://vertabelo.com)
--- Last modification date: 2025-02-17 17:21:44.605
+-- Last modification date: 2025-03-07 17:36:45.962
 
 -- tables
 -- Table: Ambiente
@@ -72,6 +72,7 @@ CREATE TABLE `Publicacion` (
     `Usuario_id_usuario` int  NOT NULL,
     `Vivienda_id_vivienda` int  NULL,
     `Vehiculo_id_vehiculo` int  NULL,
+    `Tipo_publicacion_id_t_publicacion` int  NOT NULL,
     CONSTRAINT `Publicacion_pk` PRIMARY KEY (`id_publicacion`)
 );
 
@@ -97,6 +98,14 @@ CREATE TABLE `Servicio_Vivienda` (
     `Servicio_id` int  NOT NULL,
     `Vivienda_id` int  NOT NULL,
     CONSTRAINT `Servicio_Vivienda_pk` PRIMARY KEY (`id_ser_vi`)
+);
+
+-- Table: Tipo_publicacion
+CREATE TABLE `Tipo_publicacion` (
+    `id_t_publicacion` int  NOT NULL AUTO_INCREMENT,
+    `nombre` nvarchar(20)  NOT NULL,
+    `descipcion` nvarchar(30)  NOT NULL,
+    CONSTRAINT `Tipo_publicacion_pk` PRIMARY KEY (`id_t_publicacion`)
 );
 
 -- Table: Tipo_usuario
@@ -198,6 +207,10 @@ ALTER TABLE `Notificacion` ADD CONSTRAINT `Notificacion_Publicacion` FOREIGN KEY
 -- Reference: Notificacion_Usuario (table: Notificacion)
 ALTER TABLE `Notificacion` ADD CONSTRAINT `Notificacion_Usuario` FOREIGN KEY `Notificacion_Usuario` (`Usuario_id_usuario`)
     REFERENCES `Usuario` (`id_usuario`);
+
+-- Reference: Publicacion_Tipo_publicacion (table: Publicacion)
+ALTER TABLE `Publicacion` ADD CONSTRAINT `Publicacion_Tipo_publicacion` FOREIGN KEY `Publicacion_Tipo_publicacion` (`Tipo_publicacion_id_t_publicacion`)
+    REFERENCES `Tipo_publicacion` (`id_t_publicacion`);
 
 -- Reference: Publicacion_Usuario (table: Publicacion)
 ALTER TABLE `Publicacion` ADD CONSTRAINT `Publicacion_Usuario` FOREIGN KEY `Publicacion_Usuario` (`Usuario_id_usuario`)

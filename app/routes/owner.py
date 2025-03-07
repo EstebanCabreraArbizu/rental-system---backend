@@ -556,7 +556,7 @@ def get_publicaciones():
                 'estado': row['estado'],
                 'distrito': row['distrito'],
                 'direccion': row['direccion'],
-                'imagenes': row['imagenes'].split(',') if row['imagenes'] else [],
+                'imagenes': json.loads(row['imagenes']) if row['imagenes'] else [],
                 'tipo_publicacion': row['tipo_publicacion'],
                 'total_interesados': row['total_interesados']
             }
